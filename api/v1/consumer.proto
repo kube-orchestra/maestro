@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/kube-orchestra/maestro/api/v1";
+
+
+message Consumer {
+  string id = 1;
+  string name = 2;
+  repeated ConsumerLabel labels = 3;
+}
+
+message ConsumerLabel {
+  string id = 1;
+  string key = 2;
+  string value = 3;
+}
+
+message ConsumerList {
+  repeated Consumer consumers = 1;
+}
+
+
+message ConsumerReadRequest {
+  string id = 1;
+}
+
+service ConsumerRegistration {
+  rpc List(google.protobuf.Empty) returns(ConsumerList) {
+    option (google.api.http) = {
+      get: "/v1/consumers"
+    };
+  }
+
+  rpc Read(ConsumerReadRequest) returns (Consumer) {
+    option (google.api.http) = {
+      get: "/v1/consumers/{id}"
+    };
+  }
+}

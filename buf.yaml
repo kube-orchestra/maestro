@@ -1,0 +1,4 @@
+version: v1
+name: buf.build/kube-orchestra/maestro
+deps:
+  - buf.build/googleapis/googleapis
