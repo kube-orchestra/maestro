@@ -8,7 +8,7 @@ Maestro is the API for cluster registration and single-cluster resources definit
 
 ![Kube Orchestra Architecture](./architecture.png)
 
-## Development
+## Run
 
 ```
 $ go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
@@ -19,33 +19,70 @@ $ buf generate
 $ go run cmd/server/main.go
 ```
 
-## Test
+## Develop
 
 ```
-~/go/src/github.com$ curl -s -X GET http://localhost:8090/v1/consumers | jq
+# Start local DynamoDB
+(cd hack/dynamodb; make run)
+
+# Create Resource table
+aws dynamodb create-table --cli-input-json file://hack/dynamodb/resources.table.json
+
+# Read necessary env to be able to use `aws` CLI
+source hack/dynamodb/dynamodb-local-env.sh
+
+# List created tables
+aws dynamodb list-tables
+
+# Dump all resources
+aws dynamodb scan --table-name Resources
+
+# Create a new Consumer
+curl -X POST  localhost:8090/v1/consumers -H "Content-Type: application/json" -d '{"name": "Test", "labels": [{"ke
+y": "k1", "value": "v1" }]}'
+
+# And another one
+curl -X POST  localhost:8090/v1/consumers -H "Content-Type: application/json" -d '{"name": "Test2", "labels": [{"ke
+y": "k1", "value": "v1" }]}'
+
+# List all Consumers
+curl localhost:8090/v1/consumers  | jq
 {
   "consumers": [
     {
-      "id": "1",
-      "name": "Foo",
-      "labels": []
+      "id": "c497f701-f6af-408b-ba2f-9436896be537",
+      "name": "Test",
+      "labels": [
+        {
+          "key": "k1",
+          "value": "v1"
+        }
+      ]
     },
     {
-      "id": "2",
-      "name": "Bar",
-      "labels": []
+      "id": "55af512a-4371-4826-94a7-1959f3823afc",
+      "name": "Test2",
+      "labels": [
+        {
+          "key": "k1",
+          "value": "v1"
+        }
+      ]
     }
   ]
 }
-```
 
-```
-$ curl -s -X GET http://localhost:8090/v1/consumers/1 | jq
+# Get a specific Consumer
+curl localhost:8090/v1/consumers/c497f701-f6af-408b-ba2f-9436896be537 | jq
 {
-  "id": "1",
-  "name": "Foo",
-  "labels": []
+  "id": "c497f701-f6af-408b-ba2f-9436896be537",
+  "name": "Test",
+  "labels": [
+    {
+      "key": "k1",
+      "value": "v1"
+    }
+  ]
 }
-```
 
-Open http://0.0.0.0:8090/swagger-ui
+```
