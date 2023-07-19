@@ -2,41 +2,47 @@ package addons
 
 import (
 	"context"
+	"github.com/google/uuid"
+	"github.com/kube-orchestra/maestro/db"
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-type ConsumersRegistrationService struct {
-	v1.UnimplementedConsumerRegistrationServer
+type ConsumersService struct {
+	v1.UnimplementedConsumerServiceServer
 }
 
-func NewConsumerRegistrationService() *ConsumersRegistrationService {
-	return &ConsumersRegistrationService{}
+func NewConsumerService() *ConsumersService {
+	return &ConsumersService{}
 }
 
-func (svc *ConsumersRegistrationService) List(_ context.Context, _ *emptypb.Empty) (*v1.ConsumerList, error) {
-	c := &v1.ConsumerList{
-		Consumers: []*v1.Consumer{
-			{
-				Id:     "1",
-				Name:   "Foo",
-				Labels: nil,
-			},
-			{
-				Id:     "2",
-				Name:   "Bar",
-				Labels: nil,
-			},
-		},
+func (svc *ConsumersService) List(_ context.Context, _ *emptypb.Empty) (*v1.ConsumerList, error) {
+	c, err := db.ListConsumers()
+	if err != nil {
+		return nil, err
 	}
 	return c, nil
 }
 
-func (svc *ConsumersRegistrationService) Read(_ context.Context, r *v1.ConsumerReadRequest) (*v1.Consumer, error) {
-	c := &v1.Consumer{
-		Id:     r.Id,
-		Name:   "Foo",
-		Labels: nil,
+func (svc *ConsumersService) Read(_ context.Context, r *v1.ConsumerReadRequest) (*v1.Consumer, error) {
+	c, err := db.GetConsumer(r.Id)
+	if err != nil {
+		return nil, err
 	}
 	return c, nil
+}
+
+func (svc *ConsumersService) Create(_ context.Context, r *v1.ConsumerCreateRequest) (*v1.Consumer, error) {
+	newConsumer := &v1.Consumer{
+		Id:     uuid.NewString(),
+		Name:   r.Name,
+		Labels: r.Labels,
+	}
+
+	err := db.PutConsumer(newConsumer)
+	if err != nil {
+		return nil, err
+	}
+
+	return newConsumer, nil
 }

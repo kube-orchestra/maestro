@@ -8,7 +8,6 @@ import "google/protobuf/empty.proto";
 
 option go_package = "github.com/kube-orchestra/maestro/api/v1";
 
-
 message Consumer {
   string id = 1;
   string name = 2;
@@ -16,9 +15,8 @@ message Consumer {
 }
 
 message ConsumerLabel {
-  string id = 1;
-  string key = 2;
-  string value = 3;
+  string key = 1;
+  string value = 2;
 }
 
 message ConsumerList {
@@ -30,7 +28,12 @@ message ConsumerReadRequest {
   string id = 1;
 }
 
-service ConsumerRegistration {
+message ConsumerCreateRequest {
+  string name = 1;
+  repeated ConsumerLabel labels = 2;
+}
+
+service ConsumerService {
   rpc List(google.protobuf.Empty) returns(ConsumerList) {
     option (google.api.http) = {
       get: "/v1/consumers"
@@ -42,4 +45,12 @@ service ConsumerRegistration {
       get: "/v1/consumers/{id}"
     };
   }
+
+  rpc Create(ConsumerCreateRequest) returns (Consumer) {
+    option (google.api.http) = {
+      post: "/v1/consumers"
+      body: "*"
+    };
+  }
+
 }

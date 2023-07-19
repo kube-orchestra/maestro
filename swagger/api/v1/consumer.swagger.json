@@ -6,7 +6,7 @@
   },
   "tags": [
     {
-      "name": "ConsumerRegistration"
+      "name": "ConsumerService"
     }
   ],
   "consumes": [
@@ -18,7 +18,7 @@
   "paths": {
     "/v1/consumers": {
       "get": {
-        "operationId": "ConsumerRegistration_List",
+        "operationId": "ConsumerService_List",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -34,13 +34,43 @@
           }
         },
         "tags": [
-          "ConsumerRegistration"
+          "ConsumerService"
+        ]
+      },
+      "post": {
+        "operationId": "ConsumerService_Create",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Consumer"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ConsumerCreateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ConsumerService"
         ]
       }
     },
     "/v1/consumers/{id}": {
       "get": {
-        "operationId": "ConsumerRegistration_Read",
+        "operationId": "ConsumerService_Read",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -64,7 +94,7 @@
           }
         ],
         "tags": [
-          "ConsumerRegistration"
+          "ConsumerService"
         ]
       }
     }
@@ -118,12 +148,24 @@
         }
       }
     },
+    "v1ConsumerCreateRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ConsumerLabel"
+          }
+        }
+      }
+    },
     "v1ConsumerLabel": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string"
-        },
         "key": {
           "type": "string"
         },

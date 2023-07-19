@@ -32,7 +32,7 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
-func request_ConsumerRegistration_List_0(ctx context.Context, marshaler runtime.Marshaler, client ConsumerRegistrationClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_ConsumerService_List_0(ctx context.Context, marshaler runtime.Marshaler, client ConsumerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq emptypb.Empty
 	var metadata runtime.ServerMetadata
 
@@ -41,7 +41,7 @@ func request_ConsumerRegistration_List_0(ctx context.Context, marshaler runtime.
 
 }
 
-func local_request_ConsumerRegistration_List_0(ctx context.Context, marshaler runtime.Marshaler, server ConsumerRegistrationServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_ConsumerService_List_0(ctx context.Context, marshaler runtime.Marshaler, server ConsumerServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq emptypb.Empty
 	var metadata runtime.ServerMetadata
 
@@ -50,7 +50,7 @@ func local_request_ConsumerRegistration_List_0(ctx context.Context, marshaler ru
 
 }
 
-func request_ConsumerRegistration_Read_0(ctx context.Context, marshaler runtime.Marshaler, client ConsumerRegistrationClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_ConsumerService_Read_0(ctx context.Context, marshaler runtime.Marshaler, client ConsumerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ConsumerReadRequest
 	var metadata runtime.ServerMetadata
 
@@ -76,7 +76,7 @@ func request_ConsumerRegistration_Read_0(ctx context.Context, marshaler runtime.
 
 }
 
-func local_request_ConsumerRegistration_Read_0(ctx context.Context, marshaler runtime.Marshaler, server ConsumerRegistrationServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_ConsumerService_Read_0(ctx context.Context, marshaler runtime.Marshaler, server ConsumerServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ConsumerReadRequest
 	var metadata runtime.ServerMetadata
 
@@ -102,13 +102,47 @@ func local_request_ConsumerRegistration_Read_0(ctx context.Context, marshaler ru
 
 }
 
-// RegisterConsumerRegistrationHandlerServer registers the http handlers for service ConsumerRegistration to "mux".
-// UnaryRPC     :call ConsumerRegistrationServer directly.
-// StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
-// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterConsumerRegistrationHandlerFromEndpoint instead.
-func RegisterConsumerRegistrationHandlerServer(ctx context.Context, mux *runtime.ServeMux, server ConsumerRegistrationServer) error {
+func request_ConsumerService_Create_0(ctx context.Context, marshaler runtime.Marshaler, client ConsumerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ConsumerCreateRequest
+	var metadata runtime.ServerMetadata
 
-	mux.Handle("GET", pattern_ConsumerRegistration_List_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.Create(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_ConsumerService_Create_0(ctx context.Context, marshaler runtime.Marshaler, server ConsumerServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ConsumerCreateRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.Create(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+// RegisterConsumerServiceHandlerServer registers the http handlers for service ConsumerService to "mux".
+// UnaryRPC     :call ConsumerServiceServer directly.
+// StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterConsumerServiceHandlerFromEndpoint instead.
+func RegisterConsumerServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server ConsumerServiceServer) error {
+
+	mux.Handle("GET", pattern_ConsumerService_List_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -116,12 +150,12 @@ func RegisterConsumerRegistrationHandlerServer(ctx context.Context, mux *runtime
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v1.ConsumerRegistration/List", runtime.WithHTTPPathPattern("/v1/consumers"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v1.ConsumerService/List", runtime.WithHTTPPathPattern("/v1/consumers"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ConsumerRegistration_List_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ConsumerService_List_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -129,11 +163,11 @@ func RegisterConsumerRegistrationHandlerServer(ctx context.Context, mux *runtime
 			return
 		}
 
-		forward_ConsumerRegistration_List_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ConsumerService_List_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_ConsumerRegistration_Read_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_ConsumerService_Read_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -141,12 +175,12 @@ func RegisterConsumerRegistrationHandlerServer(ctx context.Context, mux *runtime
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v1.ConsumerRegistration/Read", runtime.WithHTTPPathPattern("/v1/consumers/{id}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v1.ConsumerService/Read", runtime.WithHTTPPathPattern("/v1/consumers/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ConsumerRegistration_Read_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ConsumerService_Read_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -154,16 +188,41 @@ func RegisterConsumerRegistrationHandlerServer(ctx context.Context, mux *runtime
 			return
 		}
 
-		forward_ConsumerRegistration_Read_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ConsumerService_Read_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_ConsumerService_Create_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v1.ConsumerService/Create", runtime.WithHTTPPathPattern("/v1/consumers"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_ConsumerService_Create_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_ConsumerService_Create_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
 	return nil
 }
 
-// RegisterConsumerRegistrationHandlerFromEndpoint is same as RegisterConsumerRegistrationHandler but
+// RegisterConsumerServiceHandlerFromEndpoint is same as RegisterConsumerServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterConsumerRegistrationHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+func RegisterConsumerServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
 	conn, err := grpc.DialContext(ctx, endpoint, opts...)
 	if err != nil {
 		return err
@@ -183,63 +242,85 @@ func RegisterConsumerRegistrationHandlerFromEndpoint(ctx context.Context, mux *r
 		}()
 	}()
 
-	return RegisterConsumerRegistrationHandler(ctx, mux, conn)
+	return RegisterConsumerServiceHandler(ctx, mux, conn)
 }
 
-// RegisterConsumerRegistrationHandler registers the http handlers for service ConsumerRegistration to "mux".
+// RegisterConsumerServiceHandler registers the http handlers for service ConsumerService to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
-func RegisterConsumerRegistrationHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterConsumerRegistrationHandlerClient(ctx, mux, NewConsumerRegistrationClient(conn))
+func RegisterConsumerServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterConsumerServiceHandlerClient(ctx, mux, NewConsumerServiceClient(conn))
 }
 
-// RegisterConsumerRegistrationHandlerClient registers the http handlers for service ConsumerRegistration
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "ConsumerRegistrationClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "ConsumerRegistrationClient"
+// RegisterConsumerServiceHandlerClient registers the http handlers for service ConsumerService
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "ConsumerServiceClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "ConsumerServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "ConsumerRegistrationClient" to call the correct interceptors.
-func RegisterConsumerRegistrationHandlerClient(ctx context.Context, mux *runtime.ServeMux, client ConsumerRegistrationClient) error {
+// "ConsumerServiceClient" to call the correct interceptors.
+func RegisterConsumerServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client ConsumerServiceClient) error {
 
-	mux.Handle("GET", pattern_ConsumerRegistration_List_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_ConsumerService_List_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/v1.ConsumerRegistration/List", runtime.WithHTTPPathPattern("/v1/consumers"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/v1.ConsumerService/List", runtime.WithHTTPPathPattern("/v1/consumers"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ConsumerRegistration_List_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ConsumerService_List_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_ConsumerRegistration_List_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ConsumerService_List_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_ConsumerRegistration_Read_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_ConsumerService_Read_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/v1.ConsumerRegistration/Read", runtime.WithHTTPPathPattern("/v1/consumers/{id}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/v1.ConsumerService/Read", runtime.WithHTTPPathPattern("/v1/consumers/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ConsumerRegistration_Read_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ConsumerService_Read_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_ConsumerRegistration_Read_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ConsumerService_Read_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_ConsumerService_Create_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/v1.ConsumerService/Create", runtime.WithHTTPPathPattern("/v1/consumers"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_ConsumerService_Create_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_ConsumerService_Create_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -247,13 +328,17 @@ func RegisterConsumerRegistrationHandlerClient(ctx context.Context, mux *runtime
 }
 
 var (
-	pattern_ConsumerRegistration_List_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "consumers"}, ""))
+	pattern_ConsumerService_List_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "consumers"}, ""))
 
-	pattern_ConsumerRegistration_Read_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "consumers", "id"}, ""))
+	pattern_ConsumerService_Read_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "consumers", "id"}, ""))
+
+	pattern_ConsumerService_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "consumers"}, ""))
 )
 
 var (
-	forward_ConsumerRegistration_List_0 = runtime.ForwardResponseMessage
+	forward_ConsumerService_List_0 = runtime.ForwardResponseMessage
 
-	forward_ConsumerRegistration_Read_0 = runtime.ForwardResponseMessage
+	forward_ConsumerService_Read_0 = runtime.ForwardResponseMessage
+
+	forward_ConsumerService_Create_0 = runtime.ForwardResponseMessage
 )

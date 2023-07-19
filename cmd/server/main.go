@@ -11,6 +11,7 @@ import (
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -22,9 +23,12 @@ func main() {
 
 	// Create a gRPC server object
 	s := grpc.NewServer()
-	var consumersAPI = consumerv1.NewConsumerRegistrationService()
-	// Attach the Greeter service to the server
-	v1.RegisterConsumerRegistrationServer(s, consumersAPI)
+	// Register reflection service on gRPC server.
+	reflection.Register(s)
+
+	var consumersAPI = consumerv1.NewConsumerService()
+	// Attach the service to the server
+	v1.RegisterConsumerServiceServer(s, consumersAPI)
 	// Serve gRPC server
 	log.Println("Serving gRPC on 0.0.0.0:8080")
 	go func() {
@@ -45,7 +49,7 @@ func main() {
 
 	gwmux := runtime.NewServeMux()
 	// Register Greeter
-	err = v1.RegisterConsumerRegistrationHandler(context.Background(), gwmux, conn)
+	err = v1.RegisterConsumerServiceHandler(context.Background(), gwmux, conn)
 	if err != nil {
 		log.Fatalln("Failed to register gateway:", err)
 	}
@@ -54,8 +58,13 @@ func main() {
 	mux.Handle("/", gwmux)
 
 	// mount a path to expose the generated OpenAPI specification on disk
-	mux.HandleFunc("/swagger-ui/swagger.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/swagger-ui/consumer.swagger.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./swagger/api/v1/consumer.swagger.json")
+	})
+
+	// mount a path to expose the generated OpenAPI specification on disk
+	mux.HandleFunc("/swagger-ui/resource.swagger.json", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./swagger/api/v1/resource.swagger.json")
 	})
 
 	// mount the Swagger UI that uses the OpenAPI specification path above

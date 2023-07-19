@@ -20,126 +20,163 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ConsumerRegistration_List_FullMethodName = "/v1.ConsumerRegistration/List"
-	ConsumerRegistration_Read_FullMethodName = "/v1.ConsumerRegistration/Read"
+	ConsumerService_List_FullMethodName   = "/v1.ConsumerService/List"
+	ConsumerService_Read_FullMethodName   = "/v1.ConsumerService/Read"
+	ConsumerService_Create_FullMethodName = "/v1.ConsumerService/Create"
 )
 
-// ConsumerRegistrationClient is the client API for ConsumerRegistration service.
+// ConsumerServiceClient is the client API for ConsumerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ConsumerRegistrationClient interface {
+type ConsumerServiceClient interface {
 	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ConsumerList, error)
 	Read(ctx context.Context, in *ConsumerReadRequest, opts ...grpc.CallOption) (*Consumer, error)
+	Create(ctx context.Context, in *ConsumerCreateRequest, opts ...grpc.CallOption) (*Consumer, error)
 }
 
-type consumerRegistrationClient struct {
+type consumerServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewConsumerRegistrationClient(cc grpc.ClientConnInterface) ConsumerRegistrationClient {
-	return &consumerRegistrationClient{cc}
+func NewConsumerServiceClient(cc grpc.ClientConnInterface) ConsumerServiceClient {
+	return &consumerServiceClient{cc}
 }
 
-func (c *consumerRegistrationClient) List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ConsumerList, error) {
+func (c *consumerServiceClient) List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ConsumerList, error) {
 	out := new(ConsumerList)
-	err := c.cc.Invoke(ctx, ConsumerRegistration_List_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, ConsumerService_List_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *consumerRegistrationClient) Read(ctx context.Context, in *ConsumerReadRequest, opts ...grpc.CallOption) (*Consumer, error) {
+func (c *consumerServiceClient) Read(ctx context.Context, in *ConsumerReadRequest, opts ...grpc.CallOption) (*Consumer, error) {
 	out := new(Consumer)
-	err := c.cc.Invoke(ctx, ConsumerRegistration_Read_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, ConsumerService_Read_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// ConsumerRegistrationServer is the server API for ConsumerRegistration service.
-// All implementations must embed UnimplementedConsumerRegistrationServer
+func (c *consumerServiceClient) Create(ctx context.Context, in *ConsumerCreateRequest, opts ...grpc.CallOption) (*Consumer, error) {
+	out := new(Consumer)
+	err := c.cc.Invoke(ctx, ConsumerService_Create_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ConsumerServiceServer is the server API for ConsumerService service.
+// All implementations must embed UnimplementedConsumerServiceServer
 // for forward compatibility
-type ConsumerRegistrationServer interface {
+type ConsumerServiceServer interface {
 	List(context.Context, *emptypb.Empty) (*ConsumerList, error)
 	Read(context.Context, *ConsumerReadRequest) (*Consumer, error)
-	mustEmbedUnimplementedConsumerRegistrationServer()
+	Create(context.Context, *ConsumerCreateRequest) (*Consumer, error)
+	mustEmbedUnimplementedConsumerServiceServer()
 }
 
-// UnimplementedConsumerRegistrationServer must be embedded to have forward compatible implementations.
-type UnimplementedConsumerRegistrationServer struct {
+// UnimplementedConsumerServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedConsumerServiceServer struct {
 }
 
-func (UnimplementedConsumerRegistrationServer) List(context.Context, *emptypb.Empty) (*ConsumerList, error) {
+func (UnimplementedConsumerServiceServer) List(context.Context, *emptypb.Empty) (*ConsumerList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedConsumerRegistrationServer) Read(context.Context, *ConsumerReadRequest) (*Consumer, error) {
+func (UnimplementedConsumerServiceServer) Read(context.Context, *ConsumerReadRequest) (*Consumer, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Read not implemented")
 }
-func (UnimplementedConsumerRegistrationServer) mustEmbedUnimplementedConsumerRegistrationServer() {}
+func (UnimplementedConsumerServiceServer) Create(context.Context, *ConsumerCreateRequest) (*Consumer, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedConsumerServiceServer) mustEmbedUnimplementedConsumerServiceServer() {}
 
-// UnsafeConsumerRegistrationServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ConsumerRegistrationServer will
+// UnsafeConsumerServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ConsumerServiceServer will
 // result in compilation errors.
-type UnsafeConsumerRegistrationServer interface {
-	mustEmbedUnimplementedConsumerRegistrationServer()
+type UnsafeConsumerServiceServer interface {
+	mustEmbedUnimplementedConsumerServiceServer()
 }
 
-func RegisterConsumerRegistrationServer(s grpc.ServiceRegistrar, srv ConsumerRegistrationServer) {
-	s.RegisterService(&ConsumerRegistration_ServiceDesc, srv)
+func RegisterConsumerServiceServer(s grpc.ServiceRegistrar, srv ConsumerServiceServer) {
+	s.RegisterService(&ConsumerService_ServiceDesc, srv)
 }
 
-func _ConsumerRegistration_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ConsumerService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConsumerRegistrationServer).List(ctx, in)
+		return srv.(ConsumerServiceServer).List(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ConsumerRegistration_List_FullMethodName,
+		FullMethod: ConsumerService_List_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConsumerRegistrationServer).List(ctx, req.(*emptypb.Empty))
+		return srv.(ConsumerServiceServer).List(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ConsumerRegistration_Read_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ConsumerService_Read_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ConsumerReadRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConsumerRegistrationServer).Read(ctx, in)
+		return srv.(ConsumerServiceServer).Read(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ConsumerRegistration_Read_FullMethodName,
+		FullMethod: ConsumerService_Read_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConsumerRegistrationServer).Read(ctx, req.(*ConsumerReadRequest))
+		return srv.(ConsumerServiceServer).Read(ctx, req.(*ConsumerReadRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// ConsumerRegistration_ServiceDesc is the grpc.ServiceDesc for ConsumerRegistration service.
+func _ConsumerService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConsumerCreateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsumerServiceServer).Create(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsumerService_Create_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsumerServiceServer).Create(ctx, req.(*ConsumerCreateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// ConsumerService_ServiceDesc is the grpc.ServiceDesc for ConsumerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var ConsumerRegistration_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "v1.ConsumerRegistration",
-	HandlerType: (*ConsumerRegistrationServer)(nil),
+var ConsumerService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "v1.ConsumerService",
+	HandlerType: (*ConsumerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "List",
-			Handler:    _ConsumerRegistration_List_Handler,
+			Handler:    _ConsumerService_List_Handler,
 		},
 		{
 			MethodName: "Read",
-			Handler:    _ConsumerRegistration_Read_Handler,
+			Handler:    _ConsumerService_Read_Handler,
+		},
+		{
+			MethodName: "Create",
+			Handler:    _ConsumerService_Create_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
