@@ -1,15 +1,14 @@
 {
-    "TableName": "Consumers",
+    "TableName": "Resources",
     "KeySchema": [
-      { "AttributeName": "Id", "KeyType": "HASH" }
+      { "AttributeName": "ResourceID", "KeyType": "HASH" }
     ],
     "AttributeDefinitions": [
-      { "AttributeName": "Id", "AttributeType": "S" }
+      { "AttributeName": "ResourceID", "AttributeType": "S" }
     ],
     "ProvisionedThroughput": {
       "ReadCapacityUnits": 5,
       "WriteCapacityUnits": 5
     }
 }
-
 
