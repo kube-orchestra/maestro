@@ -1,7 +1,8 @@
-package addons
+package consumers
 
 import (
 	"context"
+
 	"github.com/google/uuid"
 	"github.com/kube-orchestra/maestro/db"
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
