@@ -14,9 +14,12 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
+const listenAddress = "localhost:8080"
+const listenAddressGateway = "localhost:8090"
+
 func main() {
 	// Create a listener on TCP port
-	lis, err := net.Listen("tcp", ":8080")
+	lis, err := net.Listen("tcp", listenAddress)
 	if err != nil {
 		log.Fatalln("Failed to listen:", err)
 	}
@@ -30,7 +33,7 @@ func main() {
 	// Attach the service to the server
 	v1.RegisterConsumerServiceServer(s, consumersAPI)
 	// Serve gRPC server
-	log.Println("Serving gRPC on 0.0.0.0:8080")
+	log.Println("Serving gRPC on", listenAddress)
 	go func() {
 		log.Fatalln(s.Serve(lis))
 	}()
@@ -39,7 +42,7 @@ func main() {
 	// This is where the gRPC-Gateway proxies the requests
 	conn, err := grpc.DialContext(
 		context.Background(),
-		"0.0.0.0:8080",
+		listenAddress,
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
@@ -70,8 +73,8 @@ func main() {
 	// mount the Swagger UI that uses the OpenAPI specification path above
 	mux.Handle("/swagger-ui/", http.StripPrefix("/swagger-ui/", http.FileServer(http.Dir("./swagger-ui"))))
 
-	log.Println("Serving gRPC-Gateway on http://0.0.0.0:8090")
-	err = http.ListenAndServe("localhost:8090", mux)
+	log.Println("Serving gRPC-Gateway on", listenAddressGateway)
+	err = http.ListenAndServe(listenAddressGateway, mux)
 	if err != nil {
 		log.Fatal(err)
 	}
