@@ -38,12 +38,10 @@ aws dynamodb list-tables
 aws dynamodb scan --table-name Resources
 
 # Create a new Consumer
-curl -X POST  localhost:8090/v1/consumers -H "Content-Type: application/json" -d '{"name": "Test", "labels": [{"ke
-y": "k1", "value": "v1" }]}'
+curl -X POST  localhost:8090/v1/consumers -H "Content-Type: application/json" -d '{"name": "Test", "labels": [{"key": "k1", "value": "v1" }]}'
 
 # And another one
-curl -X POST  localhost:8090/v1/consumers -H "Content-Type: application/json" -d '{"name": "Test2", "labels": [{"ke
-y": "k1", "value": "v1" }]}'
+curl -X POST  localhost:8090/v1/consumers -H "Content-Type: application/json" -d '{"name": "Test2", "labels": [{"key": "k1", "value": "v1" }]}'
 
 # List all Consumers
 curl localhost:8090/v1/consumers  | jq
