@@ -1,10 +1,10 @@
 {
     "TableName": "Resources",
     "KeySchema": [
-      { "AttributeName": "ResourceID", "KeyType": "HASH" }
+      { "AttributeName": "Id", "KeyType": "HASH" }
     ],
     "AttributeDefinitions": [
-      { "AttributeName": "ResourceID", "AttributeType": "S" }
+      { "AttributeName": "Id", "AttributeType": "S" }
     ],
     "ProvisionedThroughput": {
       "ReadCapacityUnits": 5,

@@ -8,6 +8,7 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	consumerv1 "github.com/kube-orchestra/maestro/internal/service/v1/consumers"
+	resourcesv1 "github.com/kube-orchestra/maestro/internal/service/v1/resources"
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -29,9 +30,14 @@ func main() {
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
 
+	// Attach the consumers service to the server
 	var consumersAPI = consumerv1.NewConsumerService()
-	// Attach the service to the server
 	v1.RegisterConsumerServiceServer(s, consumersAPI)
+
+	// Attach the resources service to the server
+	var resourcesAPI = resourcesv1.NewResourceService()
+	v1.RegisterResourceServiceServer(s, resourcesAPI)
+
 	// Serve gRPC server
 	log.Println("Serving gRPC on", listenAddress)
 	go func() {
@@ -51,10 +57,16 @@ func main() {
 	}
 
 	gwmux := runtime.NewServeMux()
+
 	// Register Greeter
 	err = v1.RegisterConsumerServiceHandler(context.Background(), gwmux, conn)
 	if err != nil {
-		log.Fatalln("Failed to register gateway:", err)
+		log.Fatalln("Failed to register consumer service handler:", err)
+	}
+
+	err = v1.RegisterResourceServiceHandler(context.Background(), gwmux, conn)
+	if err != nil {
+		log.Fatalln("Failed to register resource service handler:", err)
 	}
 
 	mux := http.NewServeMux()

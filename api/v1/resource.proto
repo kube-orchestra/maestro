@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/kube-orchestra/maestro/api/v1";
+
+message Resource {
+  string id = 1;
+  string consumerId = 2;
+  google.protobuf.Struct object = 3;
+}
+
+message ResourceReadRequest {
+  string id = 1;
+}
+
+message ResourceCreateRequest {
+  string consumerId = 1;
+  google.protobuf.Struct object = 2;
+}
+
+service ResourceService {
+  rpc Read(ResourceReadRequest) returns (Resource) {
+    option (google.api.http) = {
+      get: "/v1/resources/{id}"
+    };
+  }
+
+  rpc Create(ResourceCreateRequest) returns (Resource) {
+    option (google.api.http) = {
+      post: "/v1/resources/{consumerId}"
+      body: "object"
+    };
+  }
+}
