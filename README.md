@@ -21,22 +21,25 @@ $ go run cmd/server/main.go
 
 ## Develop
 
-```
-# Start local DynamoDB
-(cd hack/dynamodb; make run)
+### DynamoDB
 
-# Create Resource table
-aws dynamodb create-table --cli-input-json file://hack/dynamodb/resources.table.json
+```shell
+# Start local DynamoDB
+make dynamodb-start
 
 # Read necessary env to be able to use `aws` CLI
-source hack/dynamodb/dynamodb-local-env.sh
+source hack/dynamodb-local-env.sh
 
 # List created tables
 aws dynamodb list-tables
 
 # Dump all resources
 aws dynamodb scan --table-name Resources
+```
 
+### Consumer
+
+```shell
 # Create a new Consumer
 curl -X POST  localhost:8090/v1/consumers -H "Content-Type: application/json" -d '{"name": "Test", "labels": [{"key": "k1", "value": "v1" }]}'
 
