@@ -9,7 +9,7 @@ dynamodb-stop:
 	docker stop dynamodb
 
 mosquitto-start:
-	docker run --rm -it -p 1883:1883 --name mosquitto -v $(shell pwd)/hack/mosquitto-passwd.txt:/mosquitto/config/password.txt -v $(shell pwd)/hack/mosquitto.conf:/mosquitto/config/mosquitto.conf eclipse-mosquitto
+	docker run -d --rm -it -p 1883:1883 --name mosquitto -v $(shell pwd)/hack/mosquitto-passwd.txt:/mosquitto/config/password.txt -v $(shell pwd)/hack/mosquitto.conf:/mosquitto/config/mosquitto.conf eclipse-mosquitto
 
 mosquitto-stop:
 	docker stop mosquitto
