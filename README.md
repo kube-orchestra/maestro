@@ -21,6 +21,20 @@ $ go run cmd/server/main.go
 
 ## Develop
 
+### Mosquitto
+
+Mosquitto is an open-source MQTT broker
+
+```shell
+# Start mosquitto
+make mosquitto-start
+
+# Stop mosquitto
+make mosquitto-stop
+```
+
+In order to connect to this Mosquitto server use user: `admin`, password: `password`, on port 1883. [MQTT Explorer](http://mqtt-explorer.com/) is a good client for local inspection and manipulation of the MQTT messages.
+
 ### DynamoDB
 
 ```shell

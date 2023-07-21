@@ -1,4 +1,4 @@
-.PHONY: dynamodb-start dynamodb-stop
+.PHONY: dynamodb-start dynamodb-stop mosquitto-start mosquitto-stop
 
 dynamodb-start:
 	docker run --rm -d -p 8000:8000 --name dynamodb  amazon/dynamodb-local -jar DynamoDBLocal.jar -sharedDb
@@ -7,3 +7,9 @@ dynamodb-start:
 
 dynamodb-stop:
 	docker stop dynamodb
+
+mosquitto-start:
+	docker run --rm -it -p 1883:1883 --name mosquitto -v $(shell pwd)/hack/mosquitto-passwd.txt:/mosquitto/config/password.txt -v $(shell pwd)/hack/mosquitto.conf:/mosquitto/config/mosquitto.conf eclipse-mosquitto
+
+mosquitto-stop:
+	docker stop mosquitto
