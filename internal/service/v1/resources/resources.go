@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/kube-orchestra/maestro/db"
+	maestroMqtt "github.com/kube-orchestra/maestro/internal/mqtt"
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -19,10 +20,11 @@ func prettyPrint(i interface{}) string {
 
 type ResourcesService struct {
 	v1.UnimplementedResourceServiceServer
+	resourceChan chan<- maestroMqtt.ResourceMessage
 }
 
-func NewResourceService() *ResourcesService {
-	return &ResourcesService{}
+func NewResourceService(resourceChan chan<- maestroMqtt.ResourceMessage) *ResourcesService {
+	return &ResourcesService{resourceChan: resourceChan}
 }
 
 func (svc *ResourcesService) Read(_ context.Context, r *v1.ResourceReadRequest) (*v1.Resource, error) {
@@ -47,16 +49,29 @@ func (svc *ResourcesService) Read(_ context.Context, r *v1.ResourceReadRequest) 
 }
 
 func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateRequest) (*v1.Resource, error) {
+	unstructuredObject := unstructured.Unstructured{Object: r.Object.AsMap()}
 	res := db.Resource{
 		Id:         uuid.NewString(),
 		ConsumerId: r.ConsumerId,
-		Object:     unstructured.Unstructured{Object: r.Object.AsMap()},
+		Object:     unstructuredObject,
 	}
 
 	err := db.PutResource(&res)
 	if err != nil {
 		return nil, err
 	}
+
+	messageMeta := maestroMqtt.MessageMeta{
+		Id:                   res.Id,
+		ConsumerId:           res.ConsumerId,
+		SentTimestamp:        0,
+		ResourceGenerationID: "resId",
+	}
+	resourceMessage := maestroMqtt.ResourceMessage{
+		MessageMeta: messageMeta,
+		Content:     &unstructuredObject,
+	}
+	svc.resourceChan <- resourceMessage
 
 	return &v1.Resource{Id: res.Id, ConsumerId: res.ConsumerId, Object: r.Object}, nil
 }

@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
 
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	maestroMqtt "github.com/kube-orchestra/maestro/internal/mqtt"
 	consumerv1 "github.com/kube-orchestra/maestro/internal/service/v1/consumers"
 	resourcesv1 "github.com/kube-orchestra/maestro/internal/service/v1/resources"
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
@@ -18,7 +22,47 @@ import (
 const listenAddress = "localhost:8080"
 const listenAddressGateway = "localhost:8090"
 
+var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
+	fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+}
+
+var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
+	fmt.Println("Connected")
+}
+
+var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
+	fmt.Printf("Connect lost: %v", err)
+}
+
 func main() {
+	// MQTT stuff
+	var broker = "localhost"
+	var port = 1883
+	opts := mqtt.NewClientOptions()
+	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
+	opts.SetClientID("maestro")
+	opts.SetUsername("admin")
+	opts.SetPassword("password")
+	opts.SetDefaultPublishHandler(messagePubHandler)
+	opts.OnConnect = connectHandler
+	opts.OnConnectionLost = connectLostHandler
+	client := mqtt.NewClient(opts)
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	}
+
+	resourceChan := make(chan maestroMqtt.ResourceMessage)
+	go func() {
+		for msg := range resourceChan {
+			topic := fmt.Sprintf("v1/%s/%s/content", msg.ConsumerId, msg.Id)
+			msgJson, _ := json.Marshal(msg)
+			token := client.Publish(topic, 1, false, msgJson)
+			token.Wait()
+		}
+	}()
+
+	// gRPC config
+
 	// Create a listener on TCP port
 	lis, err := net.Listen("tcp", listenAddress)
 	if err != nil {
@@ -35,7 +79,7 @@ func main() {
 	v1.RegisterConsumerServiceServer(s, consumersAPI)
 
 	// Attach the resources service to the server
-	var resourcesAPI = resourcesv1.NewResourceService()
+	var resourcesAPI = resourcesv1.NewResourceService(resourceChan)
 	v1.RegisterResourceServiceServer(s, resourcesAPI)
 
 	// Serve gRPC server
