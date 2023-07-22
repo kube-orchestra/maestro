@@ -8,22 +8,93 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const ConsumerTable = "Consumers"
 
-func PutConsumer(c *v1.Consumer) error {
-	jsonBytes, err := attributevalue.MarshalMap(c)
+type Consumer struct {
+	Id     string
+	Name   string
+	Labels []ConsumerLabel
+	Object map[string]interface{} // To hold the google.protobuf.Struct data
+}
+
+type ConsumerLabel struct {
+	Key   string
+	Value string
+}
+
+func ConvertProtobufToStruct(protoConsumer *v1.Consumer) Consumer {
+	consumer := Consumer{
+		Id:   protoConsumer.Id,
+		Name: protoConsumer.Name,
+	}
+
+	for _, protoLabel := range protoConsumer.Labels {
+		label := ConsumerLabel{
+			Key:   protoLabel.Key,
+			Value: protoLabel.Value,
+		}
+		consumer.Labels = append(consumer.Labels, label)
+	}
+
+	object, err := structpb.ToGoValue(protoConsumer.Object)
 	if err != nil {
 		return err
 	}
 
-	_, err = dbClient.PutItem(
-		context.TODO(),
-		&dynamodb.PutItemInput{
-			TableName: aws.String(ConsumerTable),
-			Item:      jsonBytes,
-		})
+	if objMap, ok := object.(map[string]interface{}); ok {
+		consumer.Object = objMap
+	}
+
+	return consumer
+}
+
+func PutConsumer(c Consumer) error {
+
+	labels := make([]types.AttributeValue, len(c.Labels))
+	for i, label := range c.Labels {
+		labels[i] = types.AttributeValue{
+			M: map[string]types.AttributeValue{
+				"Key":   &types.AttributeValueMemberS{Value: label.Key},
+				"Value": &types.AttributeValueMemberS{Value: label.Value},
+			},
+		}
+	}
+	objectAttr, err := structpb.NewValue(c.Object)
+	objectMap, err := types.MarshalAttributeValueMap(objectAttr.GetStructValue())
+
+	item := map[string]types.AttributeValue{
+		"id":     &types.AttributeValueMemberS{Value: c.Id},
+		"name":   &types.AttributeValueMemberS{Value: c.Name},
+		"labels": &types.AttributeValueMemberL{Value: labels},
+		"object": &types.AttributeValueMemberM{Value: objectMap},
+	}
+
+	input := &dynamodb.PutItemInput{
+		Item:      item,
+		TableName: aws.String(ConsumerTable),
+	}
+
+	_, err = dbClient.PutItem(context.TODO(), input)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+	//jsonBytes, err := attributevalue.MarshalMap(c)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//_, err = dbClient.PutItem(
+	//	context.TODO(),
+	//	&dynamodb.PutItemInput{
+	//		TableName: aws.String(ConsumerTable),
+	//		Item:      jsonBytes,
+	//	})
 
 	return err
 }

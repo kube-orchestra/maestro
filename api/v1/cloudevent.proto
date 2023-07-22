@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/empty.proto";
+
+
+option go_package = "github.com/kube-orchestra/maestro/api/v1";
+
+message CloudEventMessage {
+  string spec_version = 1;
+  string type = 2;
+  string source = 3;
+  string id = 4;
+  string time = 5;
+  map<string, string> data = 6;
+}
+
+message Request {
+  string id = 1;
+}
+message Response {
+  string data = 1;
+}
+
+service CloudEventService {
+  rpc SendCloudEvent(CloudEventMessage) returns (google.protobuf.Empty);
+
+  rpc Subscribe(Request) returns (stream CloudEventMessage);
+
+  rpc Unsubscribe(Request) returns (Response);
+}

@@ -1,4 +1,4 @@
-package addons
+package consumers
 
 import (
 	"context"
@@ -16,6 +16,7 @@ func NewConsumerService() *ConsumersService {
 	return &ConsumersService{}
 }
 
+// TODO remove
 func (svc *ConsumersService) List(_ context.Context, _ *emptypb.Empty) (*v1.ConsumerList, error) {
 	c, err := db.ListConsumers()
 	if err != nil {
@@ -32,17 +33,14 @@ func (svc *ConsumersService) Read(_ context.Context, r *v1.ConsumerReadRequest) 
 	return c, nil
 }
 
-func (svc *ConsumersService) Create(_ context.Context, r *v1.ConsumerCreateRequest) (*v1.Consumer, error) {
-	newConsumer := &v1.Consumer{
-		Id:     uuid.NewString(),
-		Name:   r.Name,
-		Labels: r.Labels,
-	}
+func (svc *ConsumersService) Create(_ context.Context, r *v1.Consumer) (*v1.Consumer, error) {
+	r.Id = uuid.NewString()
 
-	err := db.PutConsumer(newConsumer)
+	consumerStruct := db.ConvertProtobufToStruct(r)
+
+	err := db.PutConsumer(consumerStruct)
 	if err != nil {
 		return nil, err
 	}
-
-	return newConsumer, nil
+	return r, nil
 }

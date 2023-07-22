@@ -2,16 +2,16 @@ package main
 
 import (
 	"context"
-	"log"
-	"net"
-	"net/http"
-
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	consumerv1 "github.com/kube-orchestra/maestro/internal/service/v1/consumers"
+	cloudeventsv1 "github.com/kube-orchestra/maestro/internal/services/v1/cloudevents"
+	consumerv1 "github.com/kube-orchestra/maestro/internal/services/v1/consumers"
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
+	"log"
+	"net"
+	"net/http"
 )
 
 func main() {
@@ -23,12 +23,15 @@ func main() {
 
 	// Create a gRPC server object
 	s := grpc.NewServer()
-	// Register reflection service on gRPC server.
+	// Register reflection services on gRPC server.
 	reflection.Register(s)
 
 	var consumersAPI = consumerv1.NewConsumerService()
-	// Attach the service to the server
 	v1.RegisterConsumerServiceServer(s, consumersAPI)
+
+	var cloudEventsAPI = cloudeventsv1.NewCloudEventsService()
+	v1.RegisterCloudEventServiceServer(s, cloudEventsAPI)
+
 	// Serve gRPC server
 	log.Println("Serving gRPC on 0.0.0.0:8080")
 	go func() {

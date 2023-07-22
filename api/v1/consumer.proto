@@ -4,6 +4,7 @@ package v1;
 
 import "google/api/annotations.proto";
 import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
 import "google/protobuf/empty.proto";
 
 option go_package = "github.com/kube-orchestra/maestro/api/v1";
@@ -12,6 +13,7 @@ message Consumer {
   string id = 1;
   string name = 2;
   repeated ConsumerLabel labels = 3;
+  google.protobuf.Struct object = 4;
 }
 
 message ConsumerLabel {
@@ -31,6 +33,7 @@ message ConsumerReadRequest {
 message ConsumerCreateRequest {
   string name = 1;
   repeated ConsumerLabel labels = 2;
+  google.protobuf.Struct object = 3;
 }
 
 service ConsumerService {
@@ -46,7 +49,7 @@ service ConsumerService {
     };
   }
 
-  rpc Create(ConsumerCreateRequest) returns (Consumer) {
+  rpc Create(Consumer) returns (Consumer) {
     option (google.api.http) = {
       post: "/v1/consumers"
       body: "*"
@@ -54,3 +57,4 @@ service ConsumerService {
   }
 
 }
+

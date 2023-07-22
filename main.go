@@ -34,7 +34,7 @@ func main() {
 
 	// Create a gRPC server object
 	s := grpc.NewServer()
-	// Attach the Greeter service to the server
+	// Attach the Greeter services to the server
 	helloworldpb.RegisterGreeterServer(s, &server{})
 	// Serve gRPC server
 	log.Println("Serving gRPC on 0.0.0.0:8080")

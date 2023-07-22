@@ -31,7 +31,7 @@ const (
 type ConsumerServiceClient interface {
 	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ConsumerList, error)
 	Read(ctx context.Context, in *ConsumerReadRequest, opts ...grpc.CallOption) (*Consumer, error)
-	Create(ctx context.Context, in *ConsumerCreateRequest, opts ...grpc.CallOption) (*Consumer, error)
+	Create(ctx context.Context, in *Consumer, opts ...grpc.CallOption) (*Consumer, error)
 }
 
 type consumerServiceClient struct {
@@ -60,7 +60,7 @@ func (c *consumerServiceClient) Read(ctx context.Context, in *ConsumerReadReques
 	return out, nil
 }
 
-func (c *consumerServiceClient) Create(ctx context.Context, in *ConsumerCreateRequest, opts ...grpc.CallOption) (*Consumer, error) {
+func (c *consumerServiceClient) Create(ctx context.Context, in *Consumer, opts ...grpc.CallOption) (*Consumer, error) {
 	out := new(Consumer)
 	err := c.cc.Invoke(ctx, ConsumerService_Create_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -75,7 +75,7 @@ func (c *consumerServiceClient) Create(ctx context.Context, in *ConsumerCreateRe
 type ConsumerServiceServer interface {
 	List(context.Context, *emptypb.Empty) (*ConsumerList, error)
 	Read(context.Context, *ConsumerReadRequest) (*Consumer, error)
-	Create(context.Context, *ConsumerCreateRequest) (*Consumer, error)
+	Create(context.Context, *Consumer) (*Consumer, error)
 	mustEmbedUnimplementedConsumerServiceServer()
 }
 
@@ -89,7 +89,7 @@ func (UnimplementedConsumerServiceServer) List(context.Context, *emptypb.Empty) 
 func (UnimplementedConsumerServiceServer) Read(context.Context, *ConsumerReadRequest) (*Consumer, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Read not implemented")
 }
-func (UnimplementedConsumerServiceServer) Create(context.Context, *ConsumerCreateRequest) (*Consumer, error) {
+func (UnimplementedConsumerServiceServer) Create(context.Context, *Consumer) (*Consumer, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
 }
 func (UnimplementedConsumerServiceServer) mustEmbedUnimplementedConsumerServiceServer() {}
@@ -142,7 +142,7 @@ func _ConsumerService_Read_Handler(srv interface{}, ctx context.Context, dec fun
 }
 
 func _ConsumerService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ConsumerCreateRequest)
+	in := new(Consumer)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func _ConsumerService_Create_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: ConsumerService_Create_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConsumerServiceServer).Create(ctx, req.(*ConsumerCreateRequest))
+		return srv.(ConsumerServiceServer).Create(ctx, req.(*Consumer))
 	}
 	return interceptor(ctx, in, info, handler)
 }

@@ -103,7 +103,7 @@ func local_request_ConsumerService_Read_0(ctx context.Context, marshaler runtime
 }
 
 func request_ConsumerService_Create_0(ctx context.Context, marshaler runtime.Marshaler, client ConsumerServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ConsumerCreateRequest
+	var protoReq Consumer
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -120,7 +120,7 @@ func request_ConsumerService_Create_0(ctx context.Context, marshaler runtime.Mar
 }
 
 func local_request_ConsumerService_Create_0(ctx context.Context, marshaler runtime.Marshaler, server ConsumerServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ConsumerCreateRequest
+	var protoReq Consumer
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
