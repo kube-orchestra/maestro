@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/kube-orchestra/maestro/internal/db"
-	maestroMqtt "github.com/kube-orchestra/maestro/internal/mqtt"
+	"github.com/kube-orchestra/maestro/internal/mqtt"
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -19,10 +19,10 @@ func prettyPrint(i interface{}) string {
 
 type ResourcesService struct {
 	v1.UnimplementedResourceServiceServer
-	resourceChan chan<- maestroMqtt.ResourceMessage
+	resourceChan chan<- mqtt.ResourceMessage
 }
 
-func NewResourceService(resourceChan chan<- maestroMqtt.ResourceMessage) *ResourcesService {
+func NewResourceService(resourceChan chan<- mqtt.ResourceMessage) *ResourcesService {
 	return &ResourcesService{resourceChan: resourceChan}
 }
 
@@ -59,13 +59,13 @@ func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateReque
 		return nil, err
 	}
 
-	messageMeta := maestroMqtt.MessageMeta{
+	messageMeta := mqtt.MessageMeta{
 		Id:                   res.Id,
 		ConsumerId:           res.ConsumerId,
 		SentTimestamp:        0,
 		ResourceGenerationID: "resId",
 	}
-	resourceMessage := maestroMqtt.ResourceMessage{
+	resourceMessage := mqtt.ResourceMessage{
 		MessageMeta: messageMeta,
 		Content:     &unstructuredObject,
 	}
@@ -85,13 +85,13 @@ func (svc *ResourcesService) Update(_ context.Context, r *v1.ResourceUpdateReque
 
 	// TODO: increment generation
 
-	messageMeta := maestroMqtt.MessageMeta{
+	messageMeta := mqtt.MessageMeta{
 		Id:                   res.Id,
 		ConsumerId:           res.ConsumerId,
 		SentTimestamp:        0,
-		ResourceGenerationID: "resId",
+		ResourceGenerationID: "2",
 	}
-	resourceMessage := maestroMqtt.ResourceMessage{
+	resourceMessage := mqtt.ResourceMessage{
 		MessageMeta: messageMeta,
 		Content:     &res.Object,
 	}
