@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/google/uuid"
-	"github.com/kube-orchestra/maestro/db"
+	"github.com/kube-orchestra/maestro/internal/db"
 	maestroMqtt "github.com/kube-orchestra/maestro/internal/mqtt"
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
 	"google.golang.org/protobuf/types/known/structpb"
