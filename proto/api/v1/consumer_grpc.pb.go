@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,18 +19,18 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ConsumerService_List_FullMethodName   = "/v1.ConsumerService/List"
 	ConsumerService_Read_FullMethodName   = "/v1.ConsumerService/Read"
 	ConsumerService_Create_FullMethodName = "/v1.ConsumerService/Create"
+	ConsumerService_Update_FullMethodName = "/v1.ConsumerService/Update"
 )
 
 // ConsumerServiceClient is the client API for ConsumerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConsumerServiceClient interface {
-	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ConsumerList, error)
 	Read(ctx context.Context, in *ConsumerReadRequest, opts ...grpc.CallOption) (*Consumer, error)
 	Create(ctx context.Context, in *ConsumerCreateRequest, opts ...grpc.CallOption) (*Consumer, error)
+	Update(ctx context.Context, in *ConsumerUpdateRequest, opts ...grpc.CallOption) (*Consumer, error)
 }
 
 type consumerServiceClient struct {
@@ -40,15 +39,6 @@ type consumerServiceClient struct {
 
 func NewConsumerServiceClient(cc grpc.ClientConnInterface) ConsumerServiceClient {
 	return &consumerServiceClient{cc}
-}
-
-func (c *consumerServiceClient) List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ConsumerList, error) {
-	out := new(ConsumerList)
-	err := c.cc.Invoke(ctx, ConsumerService_List_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *consumerServiceClient) Read(ctx context.Context, in *ConsumerReadRequest, opts ...grpc.CallOption) (*Consumer, error) {
@@ -69,13 +59,22 @@ func (c *consumerServiceClient) Create(ctx context.Context, in *ConsumerCreateRe
 	return out, nil
 }
 
+func (c *consumerServiceClient) Update(ctx context.Context, in *ConsumerUpdateRequest, opts ...grpc.CallOption) (*Consumer, error) {
+	out := new(Consumer)
+	err := c.cc.Invoke(ctx, ConsumerService_Update_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConsumerServiceServer is the server API for ConsumerService service.
 // All implementations must embed UnimplementedConsumerServiceServer
 // for forward compatibility
 type ConsumerServiceServer interface {
-	List(context.Context, *emptypb.Empty) (*ConsumerList, error)
 	Read(context.Context, *ConsumerReadRequest) (*Consumer, error)
 	Create(context.Context, *ConsumerCreateRequest) (*Consumer, error)
+	Update(context.Context, *ConsumerUpdateRequest) (*Consumer, error)
 	mustEmbedUnimplementedConsumerServiceServer()
 }
 
@@ -83,14 +82,14 @@ type ConsumerServiceServer interface {
 type UnimplementedConsumerServiceServer struct {
 }
 
-func (UnimplementedConsumerServiceServer) List(context.Context, *emptypb.Empty) (*ConsumerList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
-}
 func (UnimplementedConsumerServiceServer) Read(context.Context, *ConsumerReadRequest) (*Consumer, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Read not implemented")
 }
 func (UnimplementedConsumerServiceServer) Create(context.Context, *ConsumerCreateRequest) (*Consumer, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedConsumerServiceServer) Update(context.Context, *ConsumerUpdateRequest) (*Consumer, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedConsumerServiceServer) mustEmbedUnimplementedConsumerServiceServer() {}
 
@@ -103,24 +102,6 @@ type UnsafeConsumerServiceServer interface {
 
 func RegisterConsumerServiceServer(s grpc.ServiceRegistrar, srv ConsumerServiceServer) {
 	s.RegisterService(&ConsumerService_ServiceDesc, srv)
-}
-
-func _ConsumerService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(emptypb.Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ConsumerServiceServer).List(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ConsumerService_List_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConsumerServiceServer).List(ctx, req.(*emptypb.Empty))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _ConsumerService_Read_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -159,6 +140,24 @@ func _ConsumerService_Create_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConsumerService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConsumerUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsumerServiceServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsumerService_Update_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsumerServiceServer).Update(ctx, req.(*ConsumerUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ConsumerService_ServiceDesc is the grpc.ServiceDesc for ConsumerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -167,16 +166,16 @@ var ConsumerService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ConsumerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "List",
-			Handler:    _ConsumerService_List_Handler,
-		},
-		{
 			MethodName: "Read",
 			Handler:    _ConsumerService_Read_Handler,
 		},
 		{
 			MethodName: "Create",
 			Handler:    _ConsumerService_Create_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _ConsumerService_Update_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

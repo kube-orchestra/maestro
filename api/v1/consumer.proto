@@ -10,7 +10,6 @@ option go_package = "github.com/kube-orchestra/maestro/api/v1";
 
 message Consumer {
   string id = 1;
-  string name = 2;
   repeated ConsumerLabel labels = 3;
 }
 
@@ -19,26 +18,21 @@ message ConsumerLabel {
   string value = 2;
 }
 
-message ConsumerList {
-  repeated Consumer consumers = 1;
-}
-
-
 message ConsumerReadRequest {
   string id = 1;
 }
 
 message ConsumerCreateRequest {
-  string name = 1;
+  string id = 1;
+  repeated ConsumerLabel labels = 2;
+}
+
+message ConsumerUpdateRequest {
+  string id = 1;
   repeated ConsumerLabel labels = 2;
 }
 
 service ConsumerService {
-  rpc List(google.protobuf.Empty) returns(ConsumerList) {
-    option (google.api.http) = {
-      get: "/v1/consumers"
-    };
-  }
 
   rpc Read(ConsumerReadRequest) returns (Consumer) {
     option (google.api.http) = {
@@ -49,6 +43,13 @@ service ConsumerService {
   rpc Create(ConsumerCreateRequest) returns (Consumer) {
     option (google.api.http) = {
       post: "/v1/consumers"
+      body: "*"
+    };
+  }
+
+  rpc Update(ConsumerUpdateRequest) returns (Consumer) {
+    option (google.api.http) = {
+      put: "/v1/consumers/{id}"
       body: "*"
     };
   }
