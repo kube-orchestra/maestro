@@ -10,6 +10,7 @@ import (
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func prettyPrint(i interface{}) string {
@@ -47,8 +48,13 @@ func (svc *ResourcesService) Read(_ context.Context, r *v1.ResourceReadRequest) 
 
 func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateRequest) (*v1.Resource, error) {
 	unstructuredObject := unstructured.Unstructured{Object: r.Object.AsMap()}
+
+	// set uid
+	uid := uuid.NewString()
+	unstructuredObject.SetUID(types.UID(uid))
+
 	res := db.Resource{
-		Id:         uuid.NewString(),
+		Id:         uid,
 		ConsumerId: r.ConsumerId,
 		Object:     unstructuredObject,
 	}
@@ -82,6 +88,9 @@ func (svc *ResourcesService) Update(_ context.Context, r *v1.ResourceUpdateReque
 	}
 
 	res.Object = unstructured.Unstructured{Object: r.Object.AsMap()}
+
+	// set Uid
+	res.Object.SetUID(types.UID(r.Id))
 
 	// TODO: increment generation
 
