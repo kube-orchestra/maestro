@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	maestroMqtt "github.com/kube-orchestra/maestro/internal/mqtt"
+	"github.com/kube-orchestra/maestro/internal/mqtt"
 	consumerv1 "github.com/kube-orchestra/maestro/internal/service/v1/consumers"
 	resourcesv1 "github.com/kube-orchestra/maestro/internal/service/v1/resources"
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
@@ -22,21 +20,9 @@ const listenAddress = "localhost:8080"
 const listenAddressGateway = "localhost:8090"
 
 func main() {
-	mqttClient := maestroMqtt.NewClient()
-
-	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
-	}
-
-	resourceChan := make(chan maestroMqtt.ResourceMessage)
-	go func() {
-		for msg := range resourceChan {
-			topic := fmt.Sprintf("v1/%s/%s/content", msg.ConsumerId, msg.Id)
-			msgJson, _ := json.Marshal(msg)
-			token := mqttClient.Publish(topic, 1, false, msgJson)
-			token.Wait()
-		}
-	}()
+	mqttConnection := mqtt.NewConnection()
+	mqttConnection.StartSender()
+	mqttConnection.StartStatusReceiver()
 
 	// gRPC config
 
@@ -56,7 +42,7 @@ func main() {
 	v1.RegisterConsumerServiceServer(s, consumersAPI)
 
 	// Attach the resources service to the server
-	var resourcesAPI = resourcesv1.NewResourceService(resourceChan)
+	var resourcesAPI = resourcesv1.NewResourceService(mqttConnection.ResourceChannel)
 	v1.RegisterResourceServiceServer(s, resourcesAPI)
 
 	// Serve gRPC server
@@ -111,4 +97,5 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 }

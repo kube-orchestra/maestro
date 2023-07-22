@@ -175,6 +175,9 @@
         },
         "object": {
           "type": "object"
+        },
+        "status": {
+          "type": "object"
         }
       }
     }

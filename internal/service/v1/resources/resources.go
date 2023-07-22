@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/kube-orchestra/maestro/internal/db"
-	"github.com/kube-orchestra/maestro/internal/mqtt"
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -20,10 +19,10 @@ func prettyPrint(i interface{}) string {
 
 type ResourcesService struct {
 	v1.UnimplementedResourceServiceServer
-	resourceChan chan<- mqtt.ResourceMessage
+	resourceChan chan<- db.ResourceMessage
 }
 
-func NewResourceService(resourceChan chan<- mqtt.ResourceMessage) *ResourcesService {
+func NewResourceService(resourceChan chan<- db.ResourceMessage) *ResourcesService {
 	return &ResourcesService{resourceChan: resourceChan}
 }
 
@@ -33,7 +32,20 @@ func (svc *ResourcesService) Read(_ context.Context, r *v1.ResourceReadRequest) 
 		return nil, err
 	}
 
-	objStructpb, err := structpb.NewStruct(res.Object.UnstructuredContent())
+	// object to proto struct
+	objProtoStruct, err := structpb.NewStruct(res.Object.UnstructuredContent())
+	if err != nil {
+		return nil, err
+	}
+
+	// status to proto struct
+	statusJson, _ := json.Marshal(&res.Status)
+	var statusMap map[string]interface{}
+	err = json.Unmarshal(statusJson, &statusMap)
+	if err != nil {
+		return nil, err
+	}
+	statusProtoStruct, err := structpb.NewStruct(statusMap)
 	if err != nil {
 		return nil, err
 	}
@@ -42,8 +54,10 @@ func (svc *ResourcesService) Read(_ context.Context, r *v1.ResourceReadRequest) 
 		Id:           res.Id,
 		ConsumerId:   res.ConsumerId,
 		GenerationId: res.ResourceGenerationID,
-		Object:       objStructpb,
+		Object:       objProtoStruct,
+		Status:       statusProtoStruct,
 	}
+
 	return resResponse, nil
 }
 
@@ -67,13 +81,13 @@ func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateReque
 		return nil, err
 	}
 
-	messageMeta := mqtt.MessageMeta{
-		Id:                   res.Id,
-		ConsumerId:           res.ConsumerId,
+	messageMeta := db.MessageMeta{
 		SentTimestamp:        0,
 		ResourceGenerationID: res.ResourceGenerationID,
 	}
-	resourceMessage := mqtt.ResourceMessage{
+	resourceMessage := db.ResourceMessage{
+		Id:          res.Id,
+		ConsumerId:  res.ConsumerId,
 		MessageMeta: messageMeta,
 		Content:     &unstructuredObject,
 	}
@@ -86,6 +100,8 @@ func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateReque
 }
 
 func (svc *ResourcesService) Update(_ context.Context, r *v1.ResourceUpdateRequest) (*v1.Resource, error) {
+	// TODO: rewrite using UpdateItem dynamodb
+
 	// check that it exists
 	res, err := db.GetResource(r.Id)
 	if err != nil {
@@ -101,14 +117,14 @@ func (svc *ResourcesService) Update(_ context.Context, r *v1.ResourceUpdateReque
 		return nil, err
 	}
 
-	messageMeta := mqtt.MessageMeta{
-		Id:                   res.Id,
-		ConsumerId:           res.ConsumerId,
+	messageMeta := db.MessageMeta{
 		SentTimestamp:        0,
 		ResourceGenerationID: res.ResourceGenerationID + 1,
 	}
 
-	resourceMessage := mqtt.ResourceMessage{
+	resourceMessage := db.ResourceMessage{
+		Id:          res.Id,
+		ConsumerId:  res.ConsumerId,
 		MessageMeta: messageMeta,
 		Content:     &res.Object,
 	}

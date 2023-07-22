@@ -2,7 +2,6 @@ package consumers
 
 import (
 	"context"
-	"log"
 
 	"github.com/google/uuid"
 	"github.com/kube-orchestra/maestro/internal/db"
@@ -62,7 +61,6 @@ func (m *ConsumerDoesNotExistError) Error() string {
 }
 
 func (svc *Service) Update(_ context.Context, c *v1.ConsumerUpdateRequest) (*v1.Consumer, error) {
-	log.Println(c.Id)
 	consumer, err := db.GetConsumer(c.Id)
 	if err != nil {
 		return nil, err

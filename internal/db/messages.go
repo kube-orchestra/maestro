@@ -1,13 +1,15 @@
-package mqtt
+package db
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type ResourceMessage struct {
 	MessageMeta `json:",inline"`
+
+	Id         string `json:"-"`
+	ConsumerId string `json:"-"`
 
 	// Kubernetes Manifest to apply on the target.
 	Content *unstructured.Unstructured `json:"content"`
@@ -18,7 +20,7 @@ type StatusMessage struct {
 	// agent status information.
 	ReconcileStatus ReconcileStatus `json:"reconcileStatus"`
 	// content status as observed on the target.
-	ContentStatus *runtime.RawExtension `json:"contentStatus"`
+	ContentStatus map[string]interface{} `json:"contentStatus"`
 }
 
 const (
@@ -40,16 +42,13 @@ type ReconcileStatus struct {
 	// MAY when object exists.
 	// RFC3339 Timestamp.
 	// .metadata.creationTimestamp as observed on the target.
-	CreationTimestamp *metav1.Time `json:"creationTimestamp,omitempty"`
+	CreationTimestamp string `json:"creationTimestamp,omitempty"`
 	// Kubernetes style status conditions,
 	// describing the state of the object on the target.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 type MessageMeta struct {
-	Id         string `json:"-"`
-	ConsumerId string `json:"-"`
-
 	// Unix Timestamp (UTC) at which time
 	// the message was sent to the broker.
 	SentTimestamp int64 `json:"sentTimestamp"`

@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -17,6 +18,7 @@ type Resource struct {
 	ConsumerId           string
 	ResourceGenerationID int64
 	Object               unstructured.Unstructured
+	Status               StatusMessage
 }
 
 func PutResource(r *Resource) error {
@@ -56,4 +58,35 @@ func GetResource(resourceID string) (*Resource, error) {
 
 	err = attributevalue.UnmarshalMap(result.Item, &r)
 	return &r, err
+}
+
+func SetStatusResource(resourceID string, statusData []byte) error {
+	var status map[string]interface{}
+	if err := json.Unmarshal(statusData, &status); err != nil {
+		return err
+	}
+
+	statusAV, err := attributevalue.MarshalMap(status)
+	if err != nil {
+		return err
+	}
+
+	input := &dynamodb.UpdateItemInput{
+		TableName: aws.String(ResourceTable),
+		Key: map[string]types.AttributeValue{
+			"Id": &types.AttributeValueMemberS{Value: resourceID},
+		},
+		UpdateExpression: aws.String("SET #statusField = :statusValue"),
+		ExpressionAttributeNames: map[string]string{
+			"#statusField": "Status",
+		},
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":statusValue": &types.AttributeValueMemberM{
+				Value: statusAV,
+			},
+		},
+	}
+
+	_, err = dbClient.UpdateItem(context.TODO(), input)
+	return err
 }

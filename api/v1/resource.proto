@@ -14,6 +14,7 @@ message Resource {
   string consumerId = 2;
   int64 generationId = 3;
   google.protobuf.Struct object = 4;
+  google.protobuf.Struct status = 5;
 }
 
 message ResourceReadRequest {
