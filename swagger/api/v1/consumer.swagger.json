@@ -17,26 +17,6 @@
   ],
   "paths": {
     "/v1/consumers": {
-      "get": {
-        "operationId": "ConsumerService_List",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1ConsumerList"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "tags": [
-          "ConsumerService"
-        ]
-      },
       "post": {
         "operationId": "ConsumerService_Create",
         "responses": {
@@ -96,6 +76,51 @@
         "tags": [
           "ConsumerService"
         ]
+      },
+      "put": {
+        "operationId": "ConsumerService_Update",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Consumer"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "labels": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1ConsumerLabel"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "tags": [
+          "ConsumerService"
+        ]
       }
     }
   },
@@ -136,9 +161,6 @@
         "id": {
           "type": "string"
         },
-        "name": {
-          "type": "string"
-        },
         "labels": {
           "type": "array",
           "items": {
@@ -151,7 +173,7 @@
     "v1ConsumerCreateRequest": {
       "type": "object",
       "properties": {
-        "name": {
+        "id": {
           "type": "string"
         },
         "labels": {
@@ -171,18 +193,6 @@
         },
         "value": {
           "type": "string"
-        }
-      }
-    },
-    "v1ConsumerList": {
-      "type": "object",
-      "properties": {
-        "consumers": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/v1Consumer"
-          }
         }
       }
     }
