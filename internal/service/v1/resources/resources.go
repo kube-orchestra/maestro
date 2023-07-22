@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/kube-orchestra/maestro/db"
@@ -33,8 +32,6 @@ func (svc *ResourcesService) Read(_ context.Context, r *v1.ResourceReadRequest) 
 		return nil, err
 	}
 
-	fmt.Println(res.Object)
-
 	objStructpb, err := structpb.NewStruct(res.Object.UnstructuredContent())
 	if err != nil {
 		return nil, err
@@ -56,6 +53,7 @@ func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateReque
 		Object:     unstructuredObject,
 	}
 
+	// TODO: check that it doesn't exist
 	err := db.PutResource(&res)
 	if err != nil {
 		return nil, err
@@ -70,6 +68,32 @@ func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateReque
 	resourceMessage := maestroMqtt.ResourceMessage{
 		MessageMeta: messageMeta,
 		Content:     &unstructuredObject,
+	}
+	svc.resourceChan <- resourceMessage
+
+	return &v1.Resource{Id: res.Id, ConsumerId: res.ConsumerId, Object: r.Object}, nil
+}
+
+func (svc *ResourcesService) Update(_ context.Context, r *v1.ResourceUpdateRequest) (*v1.Resource, error) {
+	// check that it exists
+	res, err := db.GetResource(r.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	res.Object = unstructured.Unstructured{Object: r.Object.AsMap()}
+
+	// TODO: increment generation
+
+	messageMeta := maestroMqtt.MessageMeta{
+		Id:                   res.Id,
+		ConsumerId:           res.ConsumerId,
+		SentTimestamp:        0,
+		ResourceGenerationID: "resId",
+	}
+	resourceMessage := maestroMqtt.ResourceMessage{
+		MessageMeta: messageMeta,
+		Content:     &res.Object,
 	}
 	svc.resourceChan <- resourceMessage
 

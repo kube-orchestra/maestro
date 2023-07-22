@@ -24,6 +24,11 @@ message ResourceCreateRequest {
   google.protobuf.Struct object = 2;
 }
 
+message ResourceUpdateRequest {
+  string id = 1;
+  google.protobuf.Struct object = 2;
+}
+
 service ResourceService {
   rpc Read(ResourceReadRequest) returns (Resource) {
     option (google.api.http) = {
@@ -34,6 +39,13 @@ service ResourceService {
   rpc Create(ResourceCreateRequest) returns (Resource) {
     option (google.api.http) = {
       post: "/v1/resources/{consumerId}"
+      body: "object"
+    };
+  }
+
+  rpc Update(ResourceUpdateRequest) returns (Resource) {
+    option (google.api.http) = {
+      put: "/v1/resources/{id}"
       body: "object"
     };
   }
