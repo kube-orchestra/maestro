@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	maestroMqtt "github.com/kube-orchestra/maestro/internal/mqtt"
 	consumerv1 "github.com/kube-orchestra/maestro/internal/service/v1/consumers"
@@ -21,18 +20,6 @@ import (
 
 const listenAddress = "localhost:8080"
 const listenAddressGateway = "localhost:8090"
-
-var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
-}
-
-var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	fmt.Println("Connected")
-}
-
-var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-	fmt.Printf("Connect lost: %v", err)
-}
 
 func main() {
 	mqttClient := maestroMqtt.NewClient()
