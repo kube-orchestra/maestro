@@ -49,9 +49,9 @@ func GetResource(resourceID string) (*Resource, error) {
 		return nil, err
 	}
 
-	// if result.Item == nil {
-	// 	return nil,
-	// }
+	if result.Item == nil {
+		return nil, &ErrorNotFound{}
+	}
 
 	err = attributevalue.UnmarshalMap(result.Item, &r)
 	return &r, err
