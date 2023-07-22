@@ -56,33 +56,26 @@ aws dynamodb scan --table-name Resources
 ```shell
 # Create a new Consumer
 curl -X POST  localhost:8090/v1/consumers -H "Content-Type: application/json" -d '{"name": "Test", "labels": [{"key": "k1", "value": "v1" }]}'
+{
+  "id": "af467f701-f6af-408b-ba2f-9436896be890",
+  "name": "Test",
+  "labels": [
+    {
+      "key": "k1",
+      "value": "v1"
+    }
+  ]
+}
 
 # And another one
 curl -X POST  localhost:8090/v1/consumers -H "Content-Type: application/json" -d '{"name": "Test2", "labels": [{"key": "k1", "value": "v1" }]}'
-
-# List all Consumers
-curl localhost:8090/v1/consumers  | jq
 {
-  "consumers": [
+  "id": "c497f701-f6af-408b-ba2f-9436896be537",
+  "name": "Test",
+  "labels": [
     {
-      "id": "c497f701-f6af-408b-ba2f-9436896be537",
-      "name": "Test",
-      "labels": [
-        {
-          "key": "k1",
-          "value": "v1"
-        }
-      ]
-    },
-    {
-      "id": "55af512a-4371-4826-94a7-1959f3823afc",
-      "name": "Test2",
-      "labels": [
-        {
-          "key": "k1",
-          "value": "v1"
-        }
-      ]
+      "key": "k1",
+      "value": "v2"
     }
   ]
 }
@@ -95,7 +88,7 @@ curl localhost:8090/v1/consumers/c497f701-f6af-408b-ba2f-9436896be537 | jq
   "labels": [
     {
       "key": "k1",
-      "value": "v1"
+      "value": "v2"
     }
   ]
 }
