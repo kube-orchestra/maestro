@@ -35,19 +35,9 @@ var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err
 }
 
 func main() {
-	// MQTT stuff
-	var broker = "localhost"
-	var port = 1883
-	opts := mqtt.NewClientOptions()
-	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
-	opts.SetClientID("maestro")
-	opts.SetUsername("admin")
-	opts.SetPassword("password")
-	opts.SetDefaultPublishHandler(messagePubHandler)
-	opts.OnConnect = connectHandler
-	opts.OnConnectionLost = connectLostHandler
-	client := mqtt.NewClient(opts)
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
+	mqttClient := maestroMqtt.NewClient()
+
+	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 
@@ -56,7 +46,7 @@ func main() {
 		for msg := range resourceChan {
 			topic := fmt.Sprintf("v1/%s/%s/content", msg.ConsumerId, msg.Id)
 			msgJson, _ := json.Marshal(msg)
-			token := client.Publish(topic, 1, false, msgJson)
+			token := mqttClient.Publish(topic, 1, false, msgJson)
 			token.Wait()
 		}
 	}()

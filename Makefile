@@ -13,3 +13,7 @@ mosquitto-start:
 
 mosquitto-stop:
 	docker stop mosquitto
+
+run:
+	buf generate
+	go run $(shell pwd)/cmd/server/main.go
