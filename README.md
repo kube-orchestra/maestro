@@ -94,3 +94,18 @@ curl localhost:8090/v1/consumers/c497f701-f6af-408b-ba2f-9436896be537 | jq
 }
 
 ```
+
+### Integrating with ConcertMaster
+
+```shell
+# Get a Consumer ID
+CONSUMER_ID=$(curl -s -X POST localhost:8090/v1/consumers|jq -r .id)
+
+# From ConcertMaster's README
+...
+CONCERTMASTER_TOPIC_PREFIX=v1/ CONCERTMASTER_CLIENT_ID=$CONSUMER_ID go run ./cmd/concertmaster
+...
+
+# Create a resource
+curl -X POST localhost:8090/v1/resources/$CONSUMER_ID -H "Content-Type: application/json" --data-binary @hack/example.deployment.json
+```

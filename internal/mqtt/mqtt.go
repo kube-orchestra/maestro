@@ -2,6 +2,7 @@ package mqtt
 
 import (
 	"fmt"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
@@ -19,7 +20,7 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 
 func NewClient() mqtt.Client {
 	var broker = "localhost"
-	var port = 1883
+	var port = 31320
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
 	opts.SetClientID("maestro")
