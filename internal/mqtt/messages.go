@@ -56,5 +56,5 @@ type MessageMeta struct {
 
 	// Server-side opaque corelation ID.
 	// MUST be passed back in status responses unchanged.
-	ResourceGenerationID string `json:"resourceGenerationID"`
+	ResourceGenerationID int64 `json:"resourceGenerationID"`
 }

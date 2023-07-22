@@ -63,7 +63,7 @@ func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateReque
 		Id:                   res.Id,
 		ConsumerId:           res.ConsumerId,
 		SentTimestamp:        0,
-		ResourceGenerationID: "resId",
+		ResourceGenerationID: 1,
 	}
 	resourceMessage := mqtt.ResourceMessage{
 		MessageMeta: messageMeta,
@@ -89,7 +89,7 @@ func (svc *ResourcesService) Update(_ context.Context, r *v1.ResourceUpdateReque
 		Id:                   res.Id,
 		ConsumerId:           res.ConsumerId,
 		SentTimestamp:        0,
-		ResourceGenerationID: "2",
+		ResourceGenerationID: 2,
 	}
 	resourceMessage := mqtt.ResourceMessage{
 		MessageMeta: messageMeta,
