@@ -12,7 +12,8 @@ option go_package = "github.com/kube-orchestra/maestro/api/v1";
 message Resource {
   string id = 1;
   string consumerId = 2;
-  google.protobuf.Struct object = 3;
+  int64 generationId = 3;
+  google.protobuf.Struct object = 4;
 }
 
 message ResourceReadRequest {

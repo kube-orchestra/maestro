@@ -169,6 +169,10 @@
         "consumerId": {
           "type": "string"
         },
+        "generationId": {
+          "type": "string",
+          "format": "int64"
+        },
         "object": {
           "type": "object"
         }

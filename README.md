@@ -107,5 +107,8 @@ CONCERTMASTER_TOPIC_PREFIX=v1/ CONCERTMASTER_CLIENT_ID=$CONSUMER_ID go run ./cmd
 ...
 
 # Create a resource
-curl -X POST localhost:8090/v1/resources/$CONSUMER_ID -H "Content-Type: application/json" --data-binary @hack/example.deployment.json
+RESOURCE_ID=$(curl -s -X POST localhost:8090/v1/resources/$CONSUMER_ID -H "Content-Type: application/json" --data-binary @hack/example.deployment.json|jq -r .id)
+
+# Update a resource
+curl -X PUT localhost:8090/v1/resources/$RESOURCE_ID -H "Content-Type: application/json" --data-binary @hack/example.deployment.v2.json
 ```

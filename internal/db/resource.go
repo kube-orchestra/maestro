@@ -13,9 +13,10 @@ import (
 const ResourceTable = "Resources"
 
 type Resource struct {
-	Id         string
-	ConsumerId string
-	Object     unstructured.Unstructured
+	Id                   string
+	ConsumerId           string
+	ResourceGenerationID int64
+	Object               unstructured.Unstructured
 }
 
 func PutResource(r *Resource) error {

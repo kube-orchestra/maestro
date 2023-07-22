@@ -39,9 +39,10 @@ func (svc *ResourcesService) Read(_ context.Context, r *v1.ResourceReadRequest) 
 	}
 
 	resResponse := &v1.Resource{
-		Id:         res.Id,
-		ConsumerId: res.ConsumerId,
-		Object:     objStructpb,
+		Id:           res.Id,
+		ConsumerId:   res.ConsumerId,
+		GenerationId: res.ResourceGenerationID,
+		Object:       objStructpb,
 	}
 	return resResponse, nil
 }
@@ -54,9 +55,10 @@ func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateReque
 	unstructuredObject.SetUID(types.UID(uid))
 
 	res := db.Resource{
-		Id:         uid,
-		ConsumerId: r.ConsumerId,
-		Object:     unstructuredObject,
+		Id:                   uid,
+		ConsumerId:           r.ConsumerId,
+		Object:               unstructuredObject,
+		ResourceGenerationID: 1,
 	}
 
 	// TODO: check that it doesn't exist
@@ -69,7 +71,7 @@ func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateReque
 		Id:                   res.Id,
 		ConsumerId:           res.ConsumerId,
 		SentTimestamp:        0,
-		ResourceGenerationID: 1,
+		ResourceGenerationID: res.ResourceGenerationID,
 	}
 	resourceMessage := mqtt.ResourceMessage{
 		MessageMeta: messageMeta,
@@ -77,7 +79,10 @@ func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateReque
 	}
 	svc.resourceChan <- resourceMessage
 
-	return &v1.Resource{Id: res.Id, ConsumerId: res.ConsumerId, Object: r.Object}, nil
+	return &v1.Resource{Id: res.Id,
+		ConsumerId:   res.ConsumerId,
+		GenerationId: res.ResourceGenerationID,
+		Object:       r.Object}, nil
 }
 
 func (svc *ResourcesService) Update(_ context.Context, r *v1.ResourceUpdateRequest) (*v1.Resource, error) {
@@ -88,23 +93,29 @@ func (svc *ResourcesService) Update(_ context.Context, r *v1.ResourceUpdateReque
 	}
 
 	res.Object = unstructured.Unstructured{Object: r.Object.AsMap()}
-
-	// set Uid
 	res.Object.SetUID(types.UID(r.Id))
+	res.ResourceGenerationID++
 
-	// TODO: increment generation
+	err = db.PutResource(res)
+	if err != nil {
+		return nil, err
+	}
 
 	messageMeta := mqtt.MessageMeta{
 		Id:                   res.Id,
 		ConsumerId:           res.ConsumerId,
 		SentTimestamp:        0,
-		ResourceGenerationID: 2,
+		ResourceGenerationID: res.ResourceGenerationID + 1,
 	}
+
 	resourceMessage := mqtt.ResourceMessage{
 		MessageMeta: messageMeta,
 		Content:     &res.Object,
 	}
 	svc.resourceChan <- resourceMessage
 
-	return &v1.Resource{Id: res.Id, ConsumerId: res.ConsumerId, Object: r.Object}, nil
+	return &v1.Resource{Id: res.Id,
+		ConsumerId:   res.ConsumerId,
+		GenerationId: res.ResourceGenerationID,
+		Object:       r.Object}, nil
 }
