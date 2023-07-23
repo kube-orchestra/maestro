@@ -66,7 +66,7 @@ func NewClient() mqtt.Client {
 	// mqtt.DEBUG = log.New(os.Stdout, "D: ", 0)
 
 	var broker = "localhost"
-	var port = 1883
+	var port = 31320
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
 	opts.SetClientID("maestro")

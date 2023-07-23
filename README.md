@@ -92,7 +92,34 @@ curl localhost:8090/v1/consumers/c497f701-f6af-408b-ba2f-9436896be537 | jq
     }
   ]
 }
+```
 
+### Resource
+
+```shell
+# replace with the uuid of the target consumer
+CONSUMER_ID="af467f701-f6af-408b-ba2f-9436896be890"
+
+# create resource
+curl -X POST localhost:8090/v1/consumers/$CONSUMER_ID/resources -H "Content-Type: application/json" --data-binary @examples/deployment.json
+{
+  "id": "a287fa52-924f-44e6-9101-5a35cc4af496",
+  "consumerId": "303b9aa8-4980-41fd-8f97-339e4645f38c",
+  "generationId": "1",
+  "object": {
+    "apiVersion": "apps/v1",
+    "kind": "Deployment",
+    ...
+  },
+  "status": null
+}
+
+# get resource
+RESOURCE_ID="a287fa52-924f-44e6-9101-5a35cc4af496"
+curl localhost:8090/v1/resources/$RESOURCE_ID
+
+# update resource
+curl -X PUT localhost:8090/v1/resources/$RESOURCE_ID -H "Content-Type: application/json" --data-binary @examples/deployment.v2.json
 ```
 
 ### Integrating with ConcertMaster
@@ -107,7 +134,7 @@ CONCERTMASTER_TOPIC_PREFIX=v1/ CONCERTMASTER_CLIENT_ID=$CONSUMER_ID go run ./cmd
 ...
 
 # Create a resource
-RESOURCE_ID=$(curl -s -X POST localhost:8090/v1/resources/$CONSUMER_ID -H "Content-Type: application/json" --data-binary @hack/example.deployment.json|jq -r .id)
+RESOURCE_ID=$(curl -s -X POST localhost:8090/v1/consumers/$CONSUMER_ID/resources -H "Content-Type: application/json" --data-binary @hack/example.deployment.json|jq -r .id)
 
 # Update a resource
 curl -X PUT localhost:8090/v1/resources/$RESOURCE_ID -H "Content-Type: application/json" --data-binary @hack/example.deployment.v2.json

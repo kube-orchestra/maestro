@@ -21,7 +21,7 @@
       "spec": {
         "containers": [
           {
-            "image": "nginx:1.14.2",
+            "image": "nginxinc/nginx-unprivileged",
             "name": "nginx"
           }
         ]
