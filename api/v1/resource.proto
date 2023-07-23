@@ -40,7 +40,7 @@ service ResourceService {
 
   rpc Create(ResourceCreateRequest) returns (Resource) {
     option (google.api.http) = {
-      post: "/v1/resources/{consumerId}"
+      post: "/v1/consumers/{consumerId}/resources"
       body: "object"
     };
   }

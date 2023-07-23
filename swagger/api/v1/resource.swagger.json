@@ -16,7 +16,7 @@
     "application/json"
   ],
   "paths": {
-    "/v1/resources/{consumerId}": {
+    "/v1/consumers/{consumerId}/resources": {
       "post": {
         "operationId": "ResourceService_Create",
         "responses": {
