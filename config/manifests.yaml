@@ -1,0 +1,78 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: maestro-api
+  namespace: maestro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: maestro-api
+  template:
+    metadata:
+      labels:
+        app: maestro-api
+    spec:
+      containers:
+        - name: maestro-api
+          image: 'quay.io/apahim/maestro-api:v1'
+          ports:
+            - name: maestro-api
+              containerPort: 8090
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: maestro-config
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: maestro-config
+  namespace: maestro
+type: Opaque
+stringData:
+  AWS_ENDPOINT: http://localhost:8000
+  AWS_ACCESS_KEY_ID: dummy
+  AWS_SECRET_ACCESS_KEY: dummy
+  AWS_SESSION_TOKEN: dummy
+  MQTT_CLIENT_ID: maestro-api
+  MQTT_BROKER_URL: tcp://localhost:1883
+  MQTT_BROKER_USERNAME: admin
+  MQTT_BROKER_PASSWORD: password
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: maestro-api
+  namespace: maestro
+  labels:
+    app: maestro-api
+spec:
+  ports:
+    - name: maestro-api
+      protocol: TCP
+      port: 8090
+      targetPort: 8090
+  selector:
+    app: maestro-api
+    deployment: maestro-api
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: maestro
+  namespace: maestro
+  labels:
+    app: maestro-api
+spec:
+  to:
+    kind: Service
+    name: maestro-api
+    weight: 100
+  port:
+    targetPort: maestro-api
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Allow
+  wildcardPolicy: None

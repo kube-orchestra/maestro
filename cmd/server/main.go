@@ -16,8 +16,8 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-const listenAddress = "localhost:8080"
-const listenAddressGateway = "localhost:8090"
+const listenAddress = "0.0.0.0:8080"
+const listenAddressGateway = "0.0.0.0:8090"
 
 func main() {
 	mqttConnection := mqtt.NewConnection()
@@ -55,7 +55,7 @@ func main() {
 	// This is where the gRPC-Gateway proxies the requests
 	conn, err := grpc.DialContext(
 		context.Background(),
-		listenAddress,
+		"localhost:8080",
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
