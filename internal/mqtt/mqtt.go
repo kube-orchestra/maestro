@@ -3,10 +3,18 @@ package mqtt
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/kube-orchestra/maestro/internal/db"
+)
+
+const (
+	mqttClientID       = "MQTT_CLIENT_ID"
+	mqttBrokerURL      = "MQTT_BROKER_URL"
+	mqttBrokerUsername = "MQTT_BROKER_USERNAME"
+	mqttBrokerPassword = "MQTT_BROKER_PASSWORD"
 )
 
 type Connection struct {
@@ -15,7 +23,11 @@ type Connection struct {
 }
 
 func NewConnection() *Connection {
-	client := NewClient()
+	client, err := NewClient()
+	if err != nil {
+		panic(err)
+	}
+
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
@@ -59,23 +71,41 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 	}
 }
 
-func NewClient() mqtt.Client {
+func NewClient() (mqtt.Client, error) {
 	// mqtt.ERROR = log.New(os.Stdout, "E: ", 0)
 	// mqtt.CRITICAL = log.New(os.Stdout, "C: ", 0)
 	// mqtt.WARN = log.New(os.Stdout, "W: ", 0)
 	// mqtt.DEBUG = log.New(os.Stdout, "D: ", 0)
 
-	var broker = "localhost"
-	var port = 31320
+	clientID := os.Getenv(mqttClientID)
+	if len(clientID) == 0 {
+		return nil, fmt.Errorf("%s must be set", mqttClientID)
+	}
+
+	brokerURL := os.Getenv(mqttBrokerURL)
+	if len(brokerURL) == 0 {
+		return nil, fmt.Errorf("%s must be set", mqttBrokerURL)
+	}
+
+	brokerUsername := os.Getenv(mqttBrokerUsername)
+	if len(brokerUsername) == 0 {
+		return nil, fmt.Errorf("%s must be set", mqttBrokerUsername)
+	}
+
+	brokerPassword := os.Getenv(mqttBrokerPassword)
+	if len(brokerPassword) == 0 {
+		return nil, fmt.Errorf("%s must be set", mqttBrokerPassword)
+	}
+
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
-	opts.SetClientID("maestro")
-	opts.SetUsername("admin")
-	opts.SetPassword("password")
+	opts.AddBroker(brokerURL)
+	opts.SetClientID(clientID)
+	opts.SetUsername(brokerUsername)
+	opts.SetPassword(brokerPassword)
 	opts.SetDefaultPublishHandler(messagePubHandler)
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
 	client := mqtt.NewClient(opts)
 
-	return client
+	return client, nil
 }

@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -12,6 +13,12 @@ import (
 
 var dbClient *dynamodb.Client
 
+const (
+	awsEndpoint        = "AWS_ENDPOINT"
+	awsAccessKeyID     = "AWS_ACCESS_KEY_ID"
+	awsSecretAccessKey = "AWS_SECRET_ACCESS_KEY"
+)
+
 type ErrorNotFound struct{}
 
 func (e *ErrorNotFound) Error() string {
@@ -19,27 +26,41 @@ func (e *ErrorNotFound) Error() string {
 }
 
 func init() {
-	dbClient = newClient()
+	dbClient, _ = newClient()
 }
 
 // newClient Creates a DynamoDB Client
-func newClient() *dynamodb.Client {
+func newClient() (*dynamodb.Client, error) {
+
+	accessKeyID := os.Getenv(awsAccessKeyID)
+	if len(accessKeyID) == 0 {
+		return nil, fmt.Errorf("%s must be set", awsAccessKeyID)
+	}
+
+	secretAccessKey := os.Getenv(awsSecretAccessKey)
+	if len(secretAccessKey) == 0 {
+		return nil, fmt.Errorf("%s must be set", awsSecretAccessKey)
+	}
+
+	//endpoint := os.Getenv(awsEndpoint)
+
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("us-east-1"),
-		config.WithEndpointResolver(aws.EndpointResolverFunc(
-			func(service, region string) (aws.Endpoint, error) {
-				return aws.Endpoint{URL: fmt.Sprintf("http://localhost:%d", 8000)}, nil
-			})),
+		//config.WithEndpointResolver(aws.EndpointResolverFunc(
+		//	func(service, region string) (aws.Endpoint, error) {
+		//		return aws.Endpoint{URL: fmt.Sprintf(endpoint)}, nil
+		//	})),
 		config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
 			Value: aws.Credentials{
-				AccessKeyID: "dummy", SecretAccessKey: "dummy", SessionToken: "dummy",
-				Source: "Hard-coded credentials; values are irrelevant for local DynamoDB",
+				AccessKeyID:     accessKeyID,
+				SecretAccessKey: secretAccessKey,
 			},
 		}),
 	)
+
 	if err != nil {
 		panic(err)
 	}
 
-	return dynamodb.NewFromConfig(cfg)
+	return dynamodb.NewFromConfig(cfg), nil
 }
