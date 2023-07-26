@@ -2,13 +2,15 @@ package db
 
 import (
 	"context"
-	"encoding/json"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	ktypes "k8s.io/apimachinery/pkg/types"
 )
 
 const ResourceTable = "Resources"
@@ -19,6 +21,22 @@ type Resource struct {
 	ResourceGenerationID int64
 	Object               unstructured.Unstructured
 	Status               StatusMessage
+}
+
+func (r *Resource) GetUID() ktypes.UID {
+	return ktypes.UID(r.Id)
+}
+
+func (r *Resource) GetResourceVersion() string {
+	return strconv.FormatInt(r.ResourceGenerationID, 10)
+}
+
+func (r *Resource) GetDeletionTimestamp() *metav1.Time {
+	return r.Object.GetDeletionTimestamp()
+}
+
+func (r *Resource) SetDeletionTimestamp(timestamp *metav1.Time) {
+	r.Object.SetDeletionTimestamp(timestamp)
 }
 
 func PutResource(r *Resource) error {
@@ -60,12 +78,7 @@ func GetResource(resourceID string) (*Resource, error) {
 	return &r, err
 }
 
-func SetStatusResource(resourceID string, statusData []byte) error {
-	var status map[string]interface{}
-	if err := json.Unmarshal(statusData, &status); err != nil {
-		return err
-	}
-
+func SetStatusResource(resourceID string, status map[string]interface{}) error {
 	statusAV, err := attributevalue.MarshalMap(status)
 	if err != nil {
 		return err

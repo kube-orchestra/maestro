@@ -1,13 +1,14 @@
 package mqtt
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"os"
-	"strings"
-
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/kube-orchestra/maestro/internal/db"
+	"k8s.io/klog/v2"
+	"open-cluster-management.io/work/pkg/clients/mqclient"
+	"open-cluster-management.io/work/pkg/clients/workclient"
+	"open-cluster-management.io/work/pkg/clients/workclient/protocal/mqtt"
+	"os"
 )
 
 const (
@@ -18,65 +19,71 @@ const (
 )
 
 type Connection struct {
-	Client          mqtt.Client
-	ResourceChannel chan db.ResourceMessage
+	mqClient        *mqclient.MessageQueueClient[*db.Resource]
+	ResourceChannel chan db.Resource
 }
 
-func NewConnection() *Connection {
-	client, err := NewClient()
+func NewConnection(ctx context.Context) *Connection {
+	opts, err := NewClientOpts()
 	if err != nil {
 		panic(err)
 	}
 
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
-	}
+	subClient, pubClient, err := opts.GetClients(ctx, "")
 
-	resourceChan := make(chan db.ResourceMessage)
+	mqClient := mqclient.NewMessageQueueClient[*db.Resource](
+		"maestro",
+		subClient,
+		pubClient,
+		&ResourceLister{},
+		&ResourceStatusHashGetter{},
+	)
+	mqClient.WithEventDataHandler(workclient.ManifestGVR, &Encoder{}, &Decoder{})
+
+	resourceChan := make(chan db.Resource)
 	return &Connection{
-		Client:          client,
+		mqClient:        mqClient,
 		ResourceChannel: resourceChan,
 	}
 }
 
-func (c *Connection) StartSender() {
+func (c *Connection) StartSender(ctx context.Context) {
 	go func() {
 		for msg := range c.ResourceChannel {
-			topic := fmt.Sprintf("v1/%s/%s/content", msg.ConsumerId, msg.Id)
-			msgJson, _ := json.Marshal(msg)
-			token := c.Client.Publish(topic, 1, false, msgJson)
-			token.Wait()
+			eventType := mqclient.CloudEventType{
+				GroupVersionResource: workclient.ManifestGVR,
+				SubResource:          mqclient.SubResourceSpec,
+				Action:               mqclient.CreateRequestAction,
+			}
+			// assume consumer ID here is the cluster ID
+			ctxGetter := mqtt.NewMQTTContextGetter()
+			pubCtx := ctxGetter.Context(ctx, msg.ConsumerId, eventType)
+			err := c.mqClient.Publish(pubCtx, eventType, &msg)
+			if err != nil {
+				klog.Errorf("failed to publish message with err %v", err)
+			}
 		}
 	}()
 }
 
-func (c *Connection) StartStatusReceiver() {
-	c.Client.Subscribe("v1/+/+/status", 1, messagePubHandler)
-}
-
-var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	fmt.Println("MQTT Connected")
-}
-
-var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-	fmt.Printf("Connect lost: %v", err)
-}
-
-var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	topicComponents := strings.Split(msg.Topic(), "/")
-
-	err := db.SetStatusResource(topicComponents[2], msg.Payload())
+func (c *Connection) StartStatusReceiver(ctx context.Context) {
+	err := c.mqClient.Subscribe(ctx)
 	if err != nil {
-		panic(err)
+		klog.Errorf("failed to subscribe")
+		return
 	}
+
+	go func() {
+		for evt := range c.mqClient.SubscriptionResultChan() {
+			err := db.SetStatusResource(evt.Object.Id, evt.Object.Status.ContentStatus)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}()
 }
 
-func NewClient() (mqtt.Client, error) {
-	// mqtt.ERROR = log.New(os.Stdout, "E: ", 0)
-	// mqtt.CRITICAL = log.New(os.Stdout, "C: ", 0)
-	// mqtt.WARN = log.New(os.Stdout, "W: ", 0)
-	// mqtt.DEBUG = log.New(os.Stdout, "D: ", 0)
-
+func NewClientOpts() (*mqtt.MQTTClientOptions, error) {
 	clientID := os.Getenv(mqttClientID)
 	if len(clientID) == 0 {
 		return nil, fmt.Errorf("%s must be set", mqttClientID)
@@ -97,15 +104,10 @@ func NewClient() (mqtt.Client, error) {
 		return nil, fmt.Errorf("%s must be set", mqttBrokerPassword)
 	}
 
-	opts := mqtt.NewClientOptions()
-	opts.AddBroker(brokerURL)
-	opts.SetClientID(clientID)
-	opts.SetUsername(brokerUsername)
-	opts.SetPassword(brokerPassword)
-	opts.SetDefaultPublishHandler(messagePubHandler)
-	opts.OnConnect = connectHandler
-	opts.OnConnectionLost = connectLostHandler
-	client := mqtt.NewClient(opts)
+	opts := mqtt.NewMQTTClientOptions()
+	opts.BrokerHost = brokerURL
+	opts.Username = brokerUsername
+	opts.Password = brokerPassword
 
-	return client, nil
+	return opts, nil
 }

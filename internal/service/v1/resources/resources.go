@@ -19,10 +19,10 @@ func prettyPrint(i interface{}) string {
 
 type ResourcesService struct {
 	v1.UnimplementedResourceServiceServer
-	resourceChan chan<- db.ResourceMessage
+	resourceChan chan<- db.Resource
 }
 
-func NewResourceService(resourceChan chan<- db.ResourceMessage) *ResourcesService {
+func NewResourceService(resourceChan chan<- db.Resource) *ResourcesService {
 	return &ResourcesService{resourceChan: resourceChan}
 }
 
@@ -81,17 +81,7 @@ func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateReque
 		return nil, err
 	}
 
-	messageMeta := db.MessageMeta{
-		SentTimestamp:        0,
-		ResourceGenerationID: res.ResourceGenerationID,
-	}
-	resourceMessage := db.ResourceMessage{
-		Id:          res.Id,
-		ConsumerId:  res.ConsumerId,
-		MessageMeta: messageMeta,
-		Content:     &unstructuredObject,
-	}
-	svc.resourceChan <- resourceMessage
+	svc.resourceChan <- res
 
 	return &v1.Resource{Id: res.Id,
 		ConsumerId:   res.ConsumerId,
@@ -117,18 +107,7 @@ func (svc *ResourcesService) Update(_ context.Context, r *v1.ResourceUpdateReque
 		return nil, err
 	}
 
-	messageMeta := db.MessageMeta{
-		SentTimestamp:        0,
-		ResourceGenerationID: res.ResourceGenerationID + 1,
-	}
-
-	resourceMessage := db.ResourceMessage{
-		Id:          res.Id,
-		ConsumerId:  res.ConsumerId,
-		MessageMeta: messageMeta,
-		Content:     &res.Object,
-	}
-	svc.resourceChan <- resourceMessage
+	svc.resourceChan <- *res
 
 	return &v1.Resource{Id: res.Id,
 		ConsumerId:   res.ConsumerId,

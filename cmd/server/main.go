@@ -20,9 +20,10 @@ const listenAddress = "0.0.0.0:8080"
 const listenAddressGateway = "0.0.0.0:8090"
 
 func main() {
-	mqttConnection := mqtt.NewConnection()
-	mqttConnection.StartSender()
-	mqttConnection.StartStatusReceiver()
+	ctx := context.TODO()
+	mqttConnection := mqtt.NewConnection(ctx)
+	mqttConnection.StartSender(ctx)
+	mqttConnection.StartStatusReceiver(ctx)
 
 	// gRPC config
 
