@@ -183,11 +183,6 @@ func (e *Decoder) DecodeStatus(evt *cloudevents.Event) (*db.Resource, error) {
 		return nil, fmt.Errorf("failed to unmarshal event data as resource status: %v", err)
 	}
 
-	unsObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(resourceStatusPayload.ContentStatus)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert manifest to unstructured object: %v", err)
-	}
-
 	resource := &db.Resource{
 		Id:                   resourceIDStr,
 		ResourceGenerationID: resourceVersionInt,
@@ -198,8 +193,15 @@ func (e *Decoder) DecodeStatus(evt *cloudevents.Event) (*db.Resource, error) {
 			ReconcileStatus: db.ReconcileStatus{
 				Conditions: resourceStatusPayload.ReconcileStatus.Conditions,
 			},
-			ContentStatus: unsObj,
 		},
+	}
+
+	if resourceStatusPayload.ContentStatus != nil {
+		unsObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(resourceStatusPayload.ContentStatus)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert manifest to unstructured object: %v", err)
+		}
+		resource.Status.ContentStatus = unsObj
 	}
 
 	return resource, nil
