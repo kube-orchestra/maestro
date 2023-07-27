@@ -42,14 +42,14 @@ func newClient() (*dynamodb.Client, error) {
 		return nil, fmt.Errorf("%s must be set", awsSecretAccessKey)
 	}
 
-	//endpoint := os.Getenv(awsEndpoint)
+	endpoint := os.Getenv(awsEndpoint)
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("us-east-1"),
-		//config.WithEndpointResolver(aws.EndpointResolverFunc(
-		//	func(service, region string) (aws.Endpoint, error) {
-		//		return aws.Endpoint{URL: fmt.Sprintf(endpoint)}, nil
-		//	})),
+		config.WithEndpointResolver(aws.EndpointResolverFunc(
+			func(service, region string) (aws.Endpoint, error) {
+				return aws.Endpoint{URL: fmt.Sprintf(endpoint)}, nil
+			})),
 		config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
 			Value: aws.Credentials{
 				AccessKeyID:     accessKeyID,

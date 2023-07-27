@@ -35,10 +35,15 @@ func (e *Encoder) EncodeSpec(eventType, source string, obj *db.Resource) (*cloud
 		return &evt, nil
 	}
 
-	resourcePayloadJSON, err := json.Marshal(obj.Object)
+	resourcePayload := &payload.Resource{
+		Manifest: &obj.Object,
+	}
+
+	resourcePayloadJSON, err := json.Marshal(resourcePayload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal resource payload: %v", err)
 	}
+
 	if err := evt.SetData(cloudevents.ApplicationJSON, resourcePayloadJSON); err != nil {
 		return nil, fmt.Errorf("failed to encode resource to cloud event: %v", err)
 	}

@@ -67,11 +67,12 @@ func (c *Connection) StartSender(ctx context.Context) {
 }
 
 func (c *Connection) StartStatusReceiver(ctx context.Context) {
-	err := c.mqClient.Subscribe(ctx)
-	if err != nil {
-		klog.Errorf("failed to subscribe")
-		return
-	}
+	go func() {
+		if err := c.mqClient.Subscribe(ctx); err != nil {
+			//TODO retry to connect the broker and send resync request
+			klog.Errorf("failed to subscribe to host, %v", err)
+		}
+	}()
 
 	go func() {
 		for evt := range c.mqClient.SubscriptionResultChan() {
