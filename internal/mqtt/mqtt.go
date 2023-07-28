@@ -76,6 +76,7 @@ func (c *Connection) StartStatusReceiver(ctx context.Context) {
 
 	go func() {
 		for evt := range c.mqClient.SubscriptionResultChan() {
+			klog.Infof("setting status %s to db %v", evt.Object.Id, evt.Object.Status.ContentStatus)
 			err := db.SetStatusResource(evt.Object.Id, evt.Object.Status.ContentStatus)
 			if err != nil {
 				panic(err)

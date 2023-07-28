@@ -211,7 +211,11 @@ type ResourceLister struct{}
 
 // not implemented.
 func (r *ResourceLister) List() []*db.Resource {
-	return nil
+	resources, err := db.ListResource()
+	if err != nil {
+		return []*db.Resource{}
+	}
+	return resources
 }
 
 type ResourceStatusHashGetter struct{}

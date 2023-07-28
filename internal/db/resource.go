@@ -78,6 +78,28 @@ func GetResource(resourceID string) (*Resource, error) {
 	return &r, err
 }
 
+func ListResource() ([]*Resource, error) {
+	var resources []*Resource
+	scanInput := &dynamodb.ScanInput{
+		TableName: aws.String(ResourceTable),
+	}
+	result, err := dbClient.Scan(context.TODO(), scanInput)
+	if err != nil {
+		return resources, err
+	}
+
+	for _, i := range result.Items {
+		r := &Resource{}
+		err := attributevalue.UnmarshalMap(i, r)
+		if err != nil {
+			return resources, err
+		}
+		resources = append(resources, r)
+	}
+
+	return resources, nil
+}
+
 func SetStatusResource(resourceID string, status map[string]interface{}) error {
 	statusAV, err := attributevalue.MarshalMap(status)
 	if err != nil {
