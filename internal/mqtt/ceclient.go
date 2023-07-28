@@ -4,6 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"time"
+
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
 	"github.com/kube-orchestra/maestro/internal/db"
@@ -12,8 +15,6 @@ import (
 	workv1 "open-cluster-management.io/api/work/v1"
 	"open-cluster-management.io/work/pkg/clients/mqclient"
 	"open-cluster-management.io/work/pkg/clients/workclient/payload"
-	"strconv"
-	"time"
 )
 
 type Encoder struct{}
@@ -210,12 +211,12 @@ func (e *Decoder) DecodeStatus(evt *cloudevents.Event) (*db.Resource, error) {
 type ResourceLister struct{}
 
 // not implemented.
-func (r *ResourceLister) List() []*db.Resource {
+func (r *ResourceLister) List(soruce, consumerId string) ([]*db.Resource, error) {
 	resources, err := db.ListResource()
 	if err != nil {
-		return []*db.Resource{}
+		return nil, err
 	}
-	return resources
+	return resources, nil
 }
 
 type ResourceStatusHashGetter struct{}
