@@ -3,12 +3,13 @@ package mqtt
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/kube-orchestra/maestro/internal/db"
 	"k8s.io/klog/v2"
 	"open-cluster-management.io/work/pkg/clients/mqclient"
+	"open-cluster-management.io/work/pkg/clients/mqclient/protocol/mqtt"
 	"open-cluster-management.io/work/pkg/clients/workclient"
-	"open-cluster-management.io/work/pkg/clients/workclient/protocal/mqtt"
-	"os"
 )
 
 const (
@@ -29,7 +30,10 @@ func NewConnection(ctx context.Context) *Connection {
 		panic(err)
 	}
 
-	subClient, pubClient, err := opts.GetClients(ctx, "")
+	subClient, pubClient, err := opts.GetClients(ctx, "maestro")
+	if err != nil {
+		panic(err)
+	}
 
 	mqClient := mqclient.NewMessageQueueClient[*db.Resource](
 		"maestro",
@@ -68,19 +72,12 @@ func (c *Connection) StartSender(ctx context.Context) {
 
 func (c *Connection) StartStatusReceiver(ctx context.Context) {
 	go func() {
-		if err := c.mqClient.Subscribe(ctx); err != nil {
+		if err := c.mqClient.Subscribe(ctx, func(event mqclient.EventType, resource *db.Resource) error {
+			klog.Infof("setting status %s to db %v", resource.Id, resource.Status.ContentStatus)
+			return db.SetStatusResource(resource.Id, &resource.Status)
+		}); err != nil {
 			//TODO retry to connect the broker and send resync request
 			klog.Errorf("failed to subscribe to host, %v", err)
-		}
-	}()
-
-	go func() {
-		for evt := range c.mqClient.SubscriptionResultChan() {
-			klog.Infof("setting status %s to db %v", evt.Object.Id, evt.Object.Status.ContentStatus)
-			err := db.SetStatusResource(evt.Object.Id, &evt.Object.Status)
-			if err != nil {
-				panic(err)
-			}
 		}
 	}()
 }
