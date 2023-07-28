@@ -100,7 +100,7 @@ func ListResource() ([]*Resource, error) {
 	return resources, nil
 }
 
-func SetStatusResource(resourceID string, status map[string]interface{}) error {
+func SetStatusResource(resourceID string, status *StatusMessage) error {
 	statusAV, err := attributevalue.MarshalMap(status)
 	if err != nil {
 		return err
