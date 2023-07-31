@@ -211,8 +211,8 @@ func (e *Decoder) DecodeStatus(evt *cloudevents.Event) (*db.Resource, error) {
 type ResourceLister struct{}
 
 // not implemented.
-func (r *ResourceLister) List(soruce, consumerId string) ([]*db.Resource, error) {
-	resources, err := db.ListResource()
+func (r *ResourceLister) List(_, consumerId string) ([]*db.Resource, error) {
+	resources, err := db.ListResourceByConsumer(consumerId)
 	if err != nil {
 		return nil, err
 	}

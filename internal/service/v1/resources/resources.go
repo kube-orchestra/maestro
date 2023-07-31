@@ -9,7 +9,6 @@ import (
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 func prettyPrint(i interface{}) string {
@@ -66,7 +65,6 @@ func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateReque
 
 	// set uid
 	uid := uuid.NewString()
-	unstructuredObject.SetUID(types.UID(uid))
 
 	res := db.Resource{
 		Id:                   uid,
@@ -99,7 +97,6 @@ func (svc *ResourcesService) Update(_ context.Context, r *v1.ResourceUpdateReque
 	}
 
 	res.Object = unstructured.Unstructured{Object: r.Object.AsMap()}
-	res.Object.SetUID(types.UID(r.Id))
 	res.ResourceGenerationID++
 
 	err = db.PutResource(res)

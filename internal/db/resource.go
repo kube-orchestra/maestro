@@ -78,9 +78,17 @@ func GetResource(resourceID string) (*Resource, error) {
 	return &r, err
 }
 
-func ListResource() ([]*Resource, error) {
+func ListResourceByConsumer(consumerID string) ([]*Resource, error) {
 	var resources []*Resource
 	scanInput := &dynamodb.ScanInput{
+		ScanFilter: map[string]types.Condition{
+			"ConsumerId": {
+				AttributeValueList: []types.AttributeValue{
+					&types.AttributeValueMemberS{Value: consumerID},
+				},
+				ComparisonOperator: types.ComparisonOperatorEq,
+			},
+		},
 		TableName: aws.String(ResourceTable),
 	}
 	result, err := dbClient.Scan(context.TODO(), scanInput)
