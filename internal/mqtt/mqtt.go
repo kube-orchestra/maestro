@@ -61,7 +61,7 @@ func (c *Connection) StartSender(ctx context.Context) {
 			}
 			// assume consumer ID here is the cluster ID
 			ctxGetter := mqtt.NewMQTTContextGetter()
-			pubCtx := ctxGetter.Context(ctx, msg.ConsumerId, eventType)
+			pubCtx := ctxGetter.Context(ctx, msg.ConsumerId, "maestro", eventType)
 			err := c.mqClient.Publish(pubCtx, eventType, &msg)
 			if err != nil {
 				klog.Errorf("failed to publish message with err %v", err)
