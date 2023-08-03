@@ -97,4 +97,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace open-cluster-management.io/work => github.com/skeeey/work v0.0.0-20230731075638-55e1e44dcb14
+replace open-cluster-management.io/work => github.com/skeeey/work v0.0.0-20230801085358-a6e28decbeaa
