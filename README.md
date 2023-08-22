@@ -4,6 +4,11 @@ Maestro is a component of the Kube Orchestra Project, a multi-cluster resources 
 
 Maestro is the API for cluster registration and single-cluster resources definition.
 
+There can be a question - why cannot the backend services (shown as Admin, gitops, REST Client etc in the drawing) talk to the MQTT Broker directly. While it definitely can, it may not be a good idea for the following reasons:
+1. for security and other reasons it is good idea often not to allow MQTT Agents from the clusters and backend services to interact directly. Maestro gives that layer of separation.
+1. considering that the MQTT agent may be offline for extended periods, it is customary for a shadow state of it to be maintained at the backend. This can handle the resync of the MQTT Agent when it comes back. Maestro allows that special application logic to be handled elegantly.
+
+
 ## Kube Orchestra Architecture
 
 ![Kube Orchestra Architecture](./architecture.png)
