@@ -1,4 +1,4 @@
-package mqtt
+package cloudevents
 
 import (
 	"context"
@@ -7,9 +7,9 @@ import (
 
 	"github.com/kube-orchestra/maestro/internal/db"
 	"k8s.io/klog/v2"
-	"open-cluster-management.io/work/pkg/clients/mqclient"
-	"open-cluster-management.io/work/pkg/clients/mqclient/protocol/mqtt"
-	"open-cluster-management.io/work/pkg/clients/workclient"
+	ceclient "open-cluster-management.io/api/client/cloudevents"
+	"open-cluster-management.io/api/client/cloudevents/options/mqtt"
+	"open-cluster-management.io/api/client/cloudevents/types"
 )
 
 const (
@@ -20,49 +20,46 @@ const (
 )
 
 type Connection struct {
-	mqClient        *mqclient.MessageQueueClient[*db.Resource]
-	ResourceChannel chan db.Resource
+	cloudEventsSourceClient *ceclient.CloudEventSourceClient[*db.Resource]
+	ResourceChannel         chan db.Resource
 }
 
 func NewConnection(ctx context.Context) *Connection {
-	opts, err := NewClientOpts()
+	mqOpts, err := NewMQTTOpts()
 	if err != nil {
 		panic(err)
 	}
 
-	subClient, pubClient, err := opts.GetClients(ctx, "maestro")
+	mqClientID := os.Getenv(mqttClientID)
+	if len(mqClientID) == 0 {
+		panic(fmt.Errorf("%s must be set", mqttClientID))
+	}
+
+	sourceOpts := mqtt.NewSourceOptions(mqOpts, mqClientID)
+
+	ceSourceClient, err := ceclient.NewCloudEventSourceClient[*db.Resource](ctx, sourceOpts,
+		&ResourceLister{}, ResourceStatusHashGetter, &Codec{})
 	if err != nil {
 		panic(err)
 	}
 
-	mqClient := mqclient.NewMessageQueueClient[*db.Resource](
-		"maestro",
-		subClient,
-		pubClient,
-		&ResourceLister{},
-		&ResourceStatusHashGetter{},
-	)
-	mqClient.WithEventDataHandler(workclient.ManifestGVR, &Encoder{}, &Decoder{})
-
-	resourceChan := make(chan db.Resource)
 	return &Connection{
-		mqClient:        mqClient,
-		ResourceChannel: resourceChan,
+		cloudEventsSourceClient: ceSourceClient,
+		ResourceChannel:         make(chan db.Resource),
 	}
 }
 
 func (c *Connection) StartSender(ctx context.Context) {
 	go func() {
+		codec := &Codec{} // TODO use the codec from cloudevents source client
 		for msg := range c.ResourceChannel {
-			eventType := mqclient.CloudEventType{
-				GroupVersionResource: workclient.ManifestGVR,
-				SubResource:          mqclient.SubResourceSpec,
-				Action:               mqclient.CreateRequestAction,
+			eventType := types.CloudEventsType{
+				CloudEventsDataType: codec.EventDataType(),
+				SubResource:         types.SubResourceSpec,
+				Action:              types.EventAction("create_request"),
 			}
 			// assume consumer ID here is the cluster ID
-			ctxGetter := mqtt.NewMQTTContextGetter()
-			pubCtx := ctxGetter.Context(ctx, msg.ConsumerId, "maestro", eventType)
-			err := c.mqClient.Publish(pubCtx, eventType, &msg)
+			err := c.cloudEventsSourceClient.Publish(ctx, eventType, &msg)
 			if err != nil {
 				klog.Errorf("failed to publish message with err %v", err)
 			}
@@ -72,7 +69,7 @@ func (c *Connection) StartSender(ctx context.Context) {
 
 func (c *Connection) StartStatusReceiver(ctx context.Context) {
 	go func() {
-		if err := c.mqClient.Subscribe(ctx, func(event mqclient.EventType, resource *db.Resource) error {
+		if err := c.cloudEventsSourceClient.Subscribe(ctx, func(action types.ResourceAction, resource *db.Resource) error {
 			klog.Infof("setting status %s to db %v", resource.Id, resource.Status.ContentStatus)
 			return db.SetStatusResource(resource.Id, &resource.Status)
 		}); err != nil {
@@ -82,12 +79,7 @@ func (c *Connection) StartStatusReceiver(ctx context.Context) {
 	}()
 }
 
-func NewClientOpts() (*mqtt.MQTTClientOptions, error) {
-	clientID := os.Getenv(mqttClientID)
-	if len(clientID) == 0 {
-		return nil, fmt.Errorf("%s must be set", mqttClientID)
-	}
-
+func NewMQTTOpts() (*mqtt.MQTTOptions, error) {
 	brokerURL := os.Getenv(mqttBrokerURL)
 	if len(brokerURL) == 0 {
 		return nil, fmt.Errorf("%s must be set", mqttBrokerURL)
@@ -103,7 +95,7 @@ func NewClientOpts() (*mqtt.MQTTClientOptions, error) {
 		return nil, fmt.Errorf("%s must be set", mqttBrokerPassword)
 	}
 
-	opts := mqtt.NewMQTTClientOptions()
+	opts := mqtt.NewMQTTOptions()
 	opts.BrokerHost = brokerURL
 	opts.Username = brokerUsername
 	opts.Password = brokerPassword
