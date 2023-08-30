@@ -31,6 +31,10 @@ message ResourceUpdateRequest {
   google.protobuf.Struct object = 2;
 }
 
+message ResourceDeleteRequest {
+  string id = 1;
+}
+
 service ResourceService {
   rpc Read(ResourceReadRequest) returns (Resource) {
     option (google.api.http) = {
@@ -49,6 +53,12 @@ service ResourceService {
     option (google.api.http) = {
       put: "/v1/resources/{id}"
       body: "object"
+    };
+  }
+
+  rpc Delete(ResourceDeleteRequest) returns (Resource) {
+    option (google.api.http) = {
+      delete: "/v1/resources/{id}"
     };
   }
 }

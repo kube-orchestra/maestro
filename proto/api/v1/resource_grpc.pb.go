@@ -22,6 +22,7 @@ const (
 	ResourceService_Read_FullMethodName   = "/v1.ResourceService/Read"
 	ResourceService_Create_FullMethodName = "/v1.ResourceService/Create"
 	ResourceService_Update_FullMethodName = "/v1.ResourceService/Update"
+	ResourceService_Delete_FullMethodName = "/v1.ResourceService/Delete"
 )
 
 // ResourceServiceClient is the client API for ResourceService service.
@@ -31,6 +32,7 @@ type ResourceServiceClient interface {
 	Read(ctx context.Context, in *ResourceReadRequest, opts ...grpc.CallOption) (*Resource, error)
 	Create(ctx context.Context, in *ResourceCreateRequest, opts ...grpc.CallOption) (*Resource, error)
 	Update(ctx context.Context, in *ResourceUpdateRequest, opts ...grpc.CallOption) (*Resource, error)
+	Delete(ctx context.Context, in *ResourceDeleteRequest, opts ...grpc.CallOption) (*Resource, error)
 }
 
 type resourceServiceClient struct {
@@ -68,6 +70,15 @@ func (c *resourceServiceClient) Update(ctx context.Context, in *ResourceUpdateRe
 	return out, nil
 }
 
+func (c *resourceServiceClient) Delete(ctx context.Context, in *ResourceDeleteRequest, opts ...grpc.CallOption) (*Resource, error) {
+	out := new(Resource)
+	err := c.cc.Invoke(ctx, ResourceService_Delete_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ResourceServiceServer is the server API for ResourceService service.
 // All implementations must embed UnimplementedResourceServiceServer
 // for forward compatibility
@@ -75,6 +86,7 @@ type ResourceServiceServer interface {
 	Read(context.Context, *ResourceReadRequest) (*Resource, error)
 	Create(context.Context, *ResourceCreateRequest) (*Resource, error)
 	Update(context.Context, *ResourceUpdateRequest) (*Resource, error)
+	Delete(context.Context, *ResourceDeleteRequest) (*Resource, error)
 	mustEmbedUnimplementedResourceServiceServer()
 }
 
@@ -90,6 +102,9 @@ func (UnimplementedResourceServiceServer) Create(context.Context, *ResourceCreat
 }
 func (UnimplementedResourceServiceServer) Update(context.Context, *ResourceUpdateRequest) (*Resource, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
+}
+func (UnimplementedResourceServiceServer) Delete(context.Context, *ResourceDeleteRequest) (*Resource, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedResourceServiceServer) mustEmbedUnimplementedResourceServiceServer() {}
 
@@ -158,6 +173,24 @@ func _ResourceService_Update_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ResourceService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResourceDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ResourceServiceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ResourceService_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ResourceServiceServer).Delete(ctx, req.(*ResourceDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ResourceService_ServiceDesc is the grpc.ServiceDesc for ResourceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -176,6 +209,10 @@ var ResourceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Update",
 			Handler:    _ResourceService_Update_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _ResourceService_Delete_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

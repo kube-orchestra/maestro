@@ -135,3 +135,27 @@ func (svc *ResourcesService) Update(_ context.Context, r *v1.ResourceUpdateReque
 		GenerationId: res.ResourceGenerationID,
 		Object:       r.Object}, nil
 }
+
+func (svc *ResourcesService) Delete(_ context.Context, r *v1.ResourceDeleteRequest) (*v1.Resource, error) {
+	res, err := db.DeleteResource(r.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	messageMeta := db.MessageMeta{
+		SentTimestamp:        0,
+		ResourceGenerationID: res.ResourceGenerationID + 1,
+	}
+
+	resourceMessage := db.ResourceMessage{
+		Id:          res.Id,
+		ConsumerId:  res.ConsumerId,
+		MessageMeta: messageMeta,
+		Content:     &res.Object,
+	}
+	svc.resourceChan <- resourceMessage
+
+	return &v1.Resource{Id: res.Id,
+		ConsumerId:   res.ConsumerId,
+		GenerationId: res.ResourceGenerationID}, nil
+}

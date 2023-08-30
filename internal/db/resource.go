@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -89,4 +90,49 @@ func SetStatusResource(resourceID string, statusData []byte) error {
 
 	_, err = dbClient.UpdateItem(context.TODO(), input)
 	return err
+}
+
+func DeleteResource(resourceID string) (*Resource, error) {
+	getItemInput := &dynamodb.GetItemInput{
+		Key: map[string]types.AttributeValue{
+			"Id": &types.AttributeValueMemberS{Value: resourceID},
+		},
+		TableName: aws.String(ResourceTable),
+	}
+
+	r := Resource{}
+
+	result, err := dbClient.GetItem(context.TODO(), getItemInput)
+	if err != nil {
+		return nil, err
+	}
+
+	if result.Item == nil {
+		return nil, &ErrorNotFound{}
+	}
+
+	if err := attributevalue.UnmarshalMap(result.Item, &r); err != nil {
+		return nil, err
+	}
+
+	if !r.Object.GetDeletionTimestamp().IsZero() {
+		return &r, nil
+	}
+
+	now := metav1.Now()
+	r.Object.SetDeletionTimestamp(&now)
+
+	jsonBytes, err := attributevalue.MarshalMap(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO this and get should be in a transactions
+	_, err = dbClient.PutItem(
+		context.TODO(),
+		&dynamodb.PutItemInput{
+			TableName: aws.String(ResourceTable),
+			Item:      jsonBytes,
+		})
+	return &r, nil
 }
