@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/google/uuid"
+	cloudeventstypes "github.com/cloudevents/sdk-go/v2/types"
 	"github.com/kube-orchestra/maestro/internal/db"
 	"k8s.io/apimachinery/pkg/runtime"
 	cegeneric "open-cluster-management.io/api/cloudevents/generic"
 	cetypes "open-cluster-management.io/api/cloudevents/generic/types"
 	workpayload "open-cluster-management.io/api/cloudevents/work/payload"
+	workv1 "open-cluster-management.io/api/work/v1"
 )
 
 type Codec struct{}
@@ -24,23 +24,38 @@ func (codec *Codec) EventDataType() cetypes.CloudEventsDataType {
 }
 
 func (codec *Codec) Encode(source string, eventType cetypes.CloudEventsType, obj *db.Resource) (*cloudevents.Event, error) {
-	evt := cloudevents.NewEvent()
-	evt.SetID(uuid.New().String())
-	evt.SetSource(source)
-	evt.SetType(eventType.String())
-	evt.SetTime(time.Now())
-	evt.SetDataContentType("application/json")
-	evt.SetExtension("resourceid", obj.Id)
-	evt.SetExtension("resourceversion", obj.ResourceGenerationID)
-	evt.SetExtension("clustername", obj.ConsumerId)
+	evtBuilder := cetypes.NewEventBuilder(source, eventType).
+		WithResourceID(string(obj.Id)).
+		WithResourceVersion(obj.ResourceGenerationID).
+		WithClusterName(obj.ConsumerId)
 
 	if !obj.Object.GetDeletionTimestamp().IsZero() {
-		evt.SetExtension("deletionTimestamp", obj.Object.GetDeletionTimestamp().Time)
-		return &evt, nil
+		evtBuilder.WithDeletionTimestamp(obj.Object.GetDeletionTimestamp().Time)
 	}
+
+	evt := evtBuilder.NewEvent()
 
 	resourcePayload := &workpayload.Manifest{
 		Manifest: obj.Object,
+		DeleteOption: &workv1.DeleteOption{
+			PropagationPolicy: workv1.DeletePropagationPolicyTypeForeground,
+		},
+		ConfigOption: &workpayload.ManifestConfigOption{
+			FeedbackRules: []workv1.FeedbackRule{
+				{
+					Type: workv1.JSONPathsType,
+					JsonPaths: []workv1.JsonPath{
+						{
+							Name: "status",
+							Path: ".status",
+						},
+					},
+				},
+			},
+			UpdateStrategy: &workv1.UpdateStrategy{
+				Type: workv1.UpdateStrategyTypeUpdate,
+			},
+		},
 	}
 
 	resourcePayloadJSON, err := json.Marshal(resourcePayload)
@@ -56,39 +71,35 @@ func (codec *Codec) Encode(source string, eventType cetypes.CloudEventsType, obj
 }
 
 func (codec *Codec) Decode(evt *cloudevents.Event) (*db.Resource, error) {
-	resourceID, err := evt.Context.GetExtension("resourceid")
+	eventType, err := cetypes.ParseCloudEventsType(evt.Type())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse cloud event type %s, %v", evt.Type(), err)
+	}
+
+	if eventType.CloudEventsDataType != workpayload.ManifestEventDataType {
+		return nil, fmt.Errorf("unsupported cloudevents data type %s", eventType.CloudEventsDataType)
+	}
+
+	evtExtensions := evt.Context.GetExtensions()
+
+	resourceID, err := cloudeventstypes.ToString(evtExtensions[cetypes.ExtensionResourceID])
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resourceid extension: %v", err)
 	}
 
-	resourceIDStr, ok := resourceID.(string)
-	if !ok {
-		return nil, fmt.Errorf("failed to convert resourceid - %v to string", resourceID)
-	}
-
-	resourceVersion, err := evt.Context.GetExtension("resourceversion")
+	resourceVersion, err := cloudeventstypes.ToString(evtExtensions[cetypes.ExtensionResourceVersion])
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resourceversion extension: %v", err)
 	}
 
-	resourceVersionStr, ok := resourceVersion.(string)
-	if !ok {
-		return nil, fmt.Errorf("failed to convert resourceversion - %v to string", resourceVersion)
-	}
-
-	resourceVersionInt, err := strconv.ParseInt(resourceVersionStr, 10, 64)
+	resourceVersionInt, err := strconv.ParseInt(resourceVersion, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert resourceversion - %v to int64", resourceVersion)
 	}
 
-	clusterName, err := evt.Context.GetExtension("clustername")
+	clusterName, err := cloudeventstypes.ToString(evtExtensions[cetypes.ExtensionClusterName])
 	if err != nil {
 		return nil, fmt.Errorf("failed to get clustername extension: %v", err)
-	}
-
-	clusterNameStr, ok := clusterName.(string)
-	if !ok {
-		return nil, fmt.Errorf("failed to convert clustername - %v to string", clusterName)
 	}
 
 	data := evt.Data()
@@ -98,9 +109,9 @@ func (codec *Codec) Decode(evt *cloudevents.Event) (*db.Resource, error) {
 	}
 
 	resource := &db.Resource{
-		Id:                   resourceIDStr,
+		Id:                   resourceID,
 		ResourceGenerationID: resourceVersionInt,
-		ConsumerId:           clusterNameStr,
+		ConsumerId:           clusterName,
 		Status: db.StatusMessage{
 			MessageMeta: db.MessageMeta{
 				ResourceGenerationID: resourceVersionInt,
