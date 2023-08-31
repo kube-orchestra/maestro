@@ -6,15 +6,15 @@ import (
 	"fmt"
 
 	"github.com/kube-orchestra/maestro/internal/db"
-	ceclient "open-cluster-management.io/api/client/cloudevents"
-	"open-cluster-management.io/api/client/cloudevents/types"
+	cegeneric "open-cluster-management.io/api/cloudevents/generic"
+	cetypes "open-cluster-management.io/api/cloudevents/generic/types"
 )
 
 type ResourceLister struct{}
 
-var _ ceclient.Lister[*db.Resource] = &ResourceLister{}
+var _ cegeneric.Lister[*db.Resource] = &ResourceLister{}
 
-func (resLister *ResourceLister) List(listOpts types.ListOptions) ([]*db.Resource, error) {
+func (resLister *ResourceLister) List(listOpts cetypes.ListOptions) ([]*db.Resource, error) {
 	resources, err := db.ListResourceByConsumer(listOpts.ClusterName)
 	if err != nil {
 		return nil, err

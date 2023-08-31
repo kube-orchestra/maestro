@@ -16,7 +16,7 @@ require (
 	google.golang.org/protobuf v1.31.0
 	k8s.io/apimachinery v0.27.4
 	k8s.io/klog/v2 v2.90.1
-	open-cluster-management.io/api v0.11.1-0.20230825053744-e598981dbc4a
+	open-cluster-management.io/api v0.11.1-0.20230831024725-c7abb657f7b2
 )
 
 require (

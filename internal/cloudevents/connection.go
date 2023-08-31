@@ -7,9 +7,9 @@ import (
 
 	"github.com/kube-orchestra/maestro/internal/db"
 	"k8s.io/klog/v2"
-	ceclient "open-cluster-management.io/api/client/cloudevents"
-	"open-cluster-management.io/api/client/cloudevents/options/mqtt"
-	"open-cluster-management.io/api/client/cloudevents/types"
+	cegeneric "open-cluster-management.io/api/cloudevents/generic"
+	"open-cluster-management.io/api/cloudevents/generic/options/mqtt"
+	cetypes "open-cluster-management.io/api/cloudevents/generic/types"
 )
 
 const (
@@ -20,7 +20,7 @@ const (
 )
 
 type Connection struct {
-	cloudEventsSourceClient *ceclient.CloudEventSourceClient[*db.Resource]
+	cloudEventsSourceClient *cegeneric.CloudEventSourceClient[*db.Resource]
 	ResourceChannel         chan db.Resource
 }
 
@@ -37,7 +37,7 @@ func NewConnection(ctx context.Context) *Connection {
 
 	sourceOpts := mqtt.NewSourceOptions(mqOpts, mqClientID)
 
-	ceSourceClient, err := ceclient.NewCloudEventSourceClient[*db.Resource](ctx, sourceOpts,
+	ceSourceClient, err := cegeneric.NewCloudEventSourceClient[*db.Resource](ctx, sourceOpts,
 		&ResourceLister{}, ResourceStatusHashGetter, &Codec{})
 	if err != nil {
 		panic(err)
@@ -53,10 +53,10 @@ func (c *Connection) StartSender(ctx context.Context) {
 	go func() {
 		codec := &Codec{} // TODO use the codec from cloudevents source client
 		for msg := range c.ResourceChannel {
-			eventType := types.CloudEventsType{
+			eventType := cetypes.CloudEventsType{
 				CloudEventsDataType: codec.EventDataType(),
-				SubResource:         types.SubResourceSpec,
-				Action:              types.EventAction("create_request"),
+				SubResource:         cetypes.SubResourceSpec,
+				Action:              cetypes.EventAction("create_request"),
 			}
 			// assume consumer ID here is the cluster ID
 			err := c.cloudEventsSourceClient.Publish(ctx, eventType, &msg)
@@ -69,7 +69,7 @@ func (c *Connection) StartSender(ctx context.Context) {
 
 func (c *Connection) StartStatusReceiver(ctx context.Context) {
 	go func() {
-		if err := c.cloudEventsSourceClient.Subscribe(ctx, func(action types.ResourceAction, resource *db.Resource) error {
+		if err := c.cloudEventsSourceClient.Subscribe(ctx, func(action cetypes.ResourceAction, resource *db.Resource) error {
 			klog.Infof("setting status %s to db %v", resource.Id, resource.Status.ContentStatus)
 			return db.SetStatusResource(resource.Id, &resource.Status)
 		}); err != nil {
