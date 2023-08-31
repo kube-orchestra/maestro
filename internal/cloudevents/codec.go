@@ -4,46 +4,58 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/google/uuid"
+	cloudeventstypes "github.com/cloudevents/sdk-go/v2/types"
 	"github.com/kube-orchestra/maestro/internal/db"
 	"k8s.io/apimachinery/pkg/runtime"
-	ceclient "open-cluster-management.io/api/client/cloudevents"
-	"open-cluster-management.io/api/client/cloudevents/types"
+	cegeneric "open-cluster-management.io/api/cloudevents/generic"
+	cetypes "open-cluster-management.io/api/cloudevents/generic/types"
+	workpayload "open-cluster-management.io/api/cloudevents/work/payload"
+	workv1 "open-cluster-management.io/api/work/v1"
 )
 
 type Codec struct{}
 
-var _ ceclient.Codec[*db.Resource] = &Codec{}
+var _ cegeneric.Codec[*db.Resource] = &Codec{}
 
-func (codec *Codec) EventDataType() types.CloudEventsDataType {
-	return types.CloudEventsDataType{
-		Group:    "io.open-cluster-management.works",
-		Version:  "v1alpha1",
-		Resource: "manifest",
-	}
+func (codec *Codec) EventDataType() cetypes.CloudEventsDataType {
+	return workpayload.ManifestEventDataType
 }
 
-func (codec *Codec) Encode(source string, eventType types.CloudEventsType, obj *db.Resource) (*cloudevents.Event, error) {
-	evt := cloudevents.NewEvent()
-	evt.SetID(uuid.New().String())
-	evt.SetSource(source)
-	evt.SetType(eventType.String())
-	evt.SetTime(time.Now())
-	evt.SetDataContentType("application/json")
-	evt.SetExtension("resourceID", obj.Id)
-	evt.SetExtension("resourceVersion", obj.ResourceGenerationID)
-	evt.SetExtension("clustername", obj.ConsumerId)
+func (codec *Codec) Encode(source string, eventType cetypes.CloudEventsType, obj *db.Resource) (*cloudevents.Event, error) {
+	evtBuilder := cetypes.NewEventBuilder(source, eventType).
+		WithResourceID(string(obj.Id)).
+		WithResourceVersion(obj.ResourceGenerationID).
+		WithClusterName(obj.ConsumerId)
 
 	if !obj.Object.GetDeletionTimestamp().IsZero() {
-		evt.SetExtension("deletionTimestamp", obj.Object.GetDeletionTimestamp().Time)
-		return &evt, nil
+		evtBuilder.WithDeletionTimestamp(obj.Object.GetDeletionTimestamp().Time)
 	}
 
-	resourcePayload := &Resource{
-		Manifest: &obj.Object,
+	evt := evtBuilder.NewEvent()
+
+	resourcePayload := &workpayload.Manifest{
+		Manifest: obj.Object,
+		DeleteOption: &workv1.DeleteOption{
+			PropagationPolicy: workv1.DeletePropagationPolicyTypeForeground,
+		},
+		ConfigOption: &workpayload.ManifestConfigOption{
+			FeedbackRules: []workv1.FeedbackRule{
+				{
+					Type: workv1.JSONPathsType,
+					JsonPaths: []workv1.JsonPath{
+						{
+							Name: "status",
+							Path: ".status",
+						},
+					},
+				},
+			},
+			UpdateStrategy: &workv1.UpdateStrategy{
+				Type: workv1.UpdateStrategyTypeUpdate,
+			},
+		},
 	}
 
 	resourcePayloadJSON, err := json.Marshal(resourcePayload)
@@ -59,52 +71,59 @@ func (codec *Codec) Encode(source string, eventType types.CloudEventsType, obj *
 }
 
 func (codec *Codec) Decode(evt *cloudevents.Event) (*db.Resource, error) {
-	resourceID, err := evt.Context.GetExtension("resourceID")
+	eventType, err := cetypes.ParseCloudEventsType(evt.Type())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get resourceID extension: %v", err)
+		return nil, fmt.Errorf("failed to parse cloud event type %s, %v", evt.Type(), err)
 	}
 
-	resourceIDStr, ok := resourceID.(string)
-	if !ok {
-		return nil, fmt.Errorf("failed to convert resourceID - %v to string", resourceID)
+	if eventType.CloudEventsDataType != workpayload.ManifestEventDataType {
+		return nil, fmt.Errorf("unsupported cloudevents data type %s", eventType.CloudEventsDataType)
 	}
 
-	resourceVersion, err := evt.Context.GetExtension("resourceVersion")
+	evtExtensions := evt.Context.GetExtensions()
+
+	resourceID, err := cloudeventstypes.ToString(evtExtensions[cetypes.ExtensionResourceID])
 	if err != nil {
-		return nil, fmt.Errorf("failed to get resourceVersion extension: %v", err)
+		return nil, fmt.Errorf("failed to get resourceid extension: %v", err)
 	}
 
-	resourceVersionStr, ok := resourceVersion.(string)
-	if !ok {
-		return nil, fmt.Errorf("failed to convert resourceVersion - %v to string", resourceVersion)
-	}
-
-	resourceVersionInt, err := strconv.ParseInt(resourceVersionStr, 10, 64)
+	resourceVersion, err := cloudeventstypes.ToString(evtExtensions[cetypes.ExtensionResourceVersion])
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert resourceVersion - %v to int64", resourceVersion)
+		return nil, fmt.Errorf("failed to get resourceversion extension: %v", err)
+	}
+
+	resourceVersionInt, err := strconv.ParseInt(resourceVersion, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert resourceversion - %v to int64", resourceVersion)
+	}
+
+	clusterName, err := cloudeventstypes.ToString(evtExtensions[cetypes.ExtensionClusterName])
+	if err != nil {
+		return nil, fmt.Errorf("failed to get clustername extension: %v", err)
 	}
 
 	data := evt.Data()
-	resourceStatusPayload := ResourceStatus{}
-	if err := json.Unmarshal(data, &resourceStatusPayload); err != nil {
+	resourceStatusPayload := &workpayload.ManifestStatus{}
+	if err := json.Unmarshal(data, resourceStatusPayload); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal event data as resource status: %v", err)
 	}
 
 	resource := &db.Resource{
-		Id:                   resourceIDStr,
+		Id:                   resourceID,
 		ResourceGenerationID: resourceVersionInt,
+		ConsumerId:           clusterName,
 		Status: db.StatusMessage{
 			MessageMeta: db.MessageMeta{
 				ResourceGenerationID: resourceVersionInt,
 			},
 			ReconcileStatus: db.ReconcileStatus{
-				Conditions: resourceStatusPayload.ReconcileStatus.Conditions,
+				Conditions: resourceStatusPayload.Conditions,
 			},
 		},
 	}
 
-	if resourceStatusPayload.ContentStatus != nil {
-		unsObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(resourceStatusPayload.ContentStatus)
+	if resourceStatusPayload.Status != nil {
+		unsObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(resourceStatusPayload.Status)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert manifest to unstructured object: %v", err)
 		}
