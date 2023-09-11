@@ -3,18 +3,11 @@ package mqtt
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/kube-orchestra/maestro/internal/config"
 	"github.com/kube-orchestra/maestro/internal/db"
-)
-
-const (
-	mqttClientID       = "MQTT_CLIENT_ID"
-	mqttBrokerURL      = "MQTT_BROKER_URL"
-	mqttBrokerUsername = "MQTT_BROKER_USERNAME"
-	mqttBrokerPassword = "MQTT_BROKER_PASSWORD"
 )
 
 type Connection struct {
@@ -77,25 +70,13 @@ func NewClient() (mqtt.Client, error) {
 	// mqtt.WARN = log.New(os.Stdout, "W: ", 0)
 	// mqtt.DEBUG = log.New(os.Stdout, "D: ", 0)
 
-	clientID := os.Getenv(mqttClientID)
-	if len(clientID) == 0 {
-		return nil, fmt.Errorf("%s must be set", mqttClientID)
-	}
+	clientID := config.Cfg.MQTTClientId
 
-	brokerURL := os.Getenv(mqttBrokerURL)
-	if len(brokerURL) == 0 {
-		return nil, fmt.Errorf("%s must be set", mqttBrokerURL)
-	}
+	brokerURL := config.Cfg.MQTTBrokerURL
 
-	brokerUsername := os.Getenv(mqttBrokerUsername)
-	if len(brokerUsername) == 0 {
-		return nil, fmt.Errorf("%s must be set", mqttBrokerUsername)
-	}
+	brokerUsername := config.Cfg.MQTTBrokerUserName
 
-	brokerPassword := os.Getenv(mqttBrokerPassword)
-	if len(brokerPassword) == 0 {
-		return nil, fmt.Errorf("%s must be set", mqttBrokerPassword)
-	}
+	brokerPassword := config.Cfg.MQTTBrokerUserPassword
 
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(brokerURL)

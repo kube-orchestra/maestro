@@ -1,66 +1,43 @@
 package db
 
 import (
-	"context"
-	"fmt"
-	"os"
+	"strconv"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/kube-orchestra/maestro/internal/config"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var dbClient *dynamodb.Client
+// need to figure out how to use this with gorm
+// var DBPool *pgxpool.Pool
+var dbClient *gorm.DB
 
-const (
-	awsEndpoint        = "AWS_ENDPOINT"
-	awsAccessKeyID     = "AWS_ACCESS_KEY_ID"
-	awsSecretAccessKey = "AWS_SECRET_ACCESS_KEY"
-)
+//type ErrorNotFound struct{}
 
-type ErrorNotFound struct{}
-
-func (e *ErrorNotFound) Error() string {
-	return fmt.Sprintf("Resource not found")
-}
+// func (e *ErrorNotFound) Error() string {
+// 	return fmt.Sprintf("Resource not found")
+// }
 
 func init() {
+	println("Initializing DB Client .....")
 	dbClient, _ = newClient()
+	setupModel()
+	println("DB Client Initialing Complete .....")
 }
 
 // newClient Creates a DynamoDB Client
-func newClient() (*dynamodb.Client, error) {
+func newClient() (*gorm.DB, error) {
 
-	accessKeyID := os.Getenv(awsAccessKeyID)
-	if len(accessKeyID) == 0 {
-		return nil, fmt.Errorf("%s must be set", awsAccessKeyID)
-	}
+	//dsn := "host=somehost user=dbuser password=dbpwd dbname=somename port=5432 sslmode=disable TimeZone=America/Los_Angeles"
 
-	secretAccessKey := os.Getenv(awsSecretAccessKey)
-	if len(secretAccessKey) == 0 {
-		return nil, fmt.Errorf("%s must be set", awsSecretAccessKey)
-	}
+	dsn := "host=" + config.Cfg.DBHost + " user=" + config.Cfg.DBUser + " password=" + config.Cfg.DBPass + " dbname=" + config.Cfg.DBName +
+		" port=" + strconv.Itoa(config.Cfg.DBPort) + " sslmode=" + config.Cfg.DBSSL + " TimeZone=" + config.Cfg.DBTmz
 
-	//endpoint := os.Getenv(awsEndpoint)
-
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion("us-east-1"),
-		//config.WithEndpointResolver(aws.EndpointResolverFunc(
-		//	func(service, region string) (aws.Endpoint, error) {
-		//		return aws.Endpoint{URL: fmt.Sprintf(endpoint)}, nil
-		//	})),
-		config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
-			Value: aws.Credentials{
-				AccessKeyID:     accessKeyID,
-				SecretAccessKey: secretAccessKey,
-			},
-		}),
-	)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
-		panic(err)
+		// be careful - this prints out the whole dsn string!!
+		println("Unable to connect to database: %v\n", err)
 	}
-
-	return dynamodb.NewFromConfig(cfg), nil
+	return db, nil
 }
