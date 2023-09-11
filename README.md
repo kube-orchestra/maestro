@@ -21,6 +21,27 @@ $ go run cmd/server/main.go
 
 ## Develop
 
+1. Install the MQTT Broker for your environmet. [Ready sample](#mosquitto) here.
+1. Install PostgreSQL and create a database for maestro
+1. export these environment variables:
+    ```
+    export MQTT_CLIENT_ID=maestro-server
+    export MQTT_BROKER_URL=tcp://localhost:1883
+    export MQTT_BROKER_USERNAME=admin
+    export MQTT_BROKER_PASSWORD=password
+    export DB_HOST=localhost (or whatever you have)
+    export DB_NAME=maestro  (or whatever you have)
+    export DB_USER=postgres  (or whatever you have)
+    export DB_PASS=password  (or whatever you have)
+    export DB_PORT=5432
+    export DB_SSL=disable
+    export DB_TMZ="America/Los_Angeles"  (or whatever you have)
+
+
+    ```
+1. `go run cmd/server/main.go`
+1. Note - dynamoDB is not supported anymore.
+
 ### Mosquitto
 
 Mosquitto is an open-source MQTT broker
@@ -139,3 +160,4 @@ RESOURCE_ID=$(curl -s -X POST localhost:8090/v1/consumers/$CONSUMER_ID/resources
 # Update a resource
 curl -X PUT localhost:8090/v1/resources/$RESOURCE_ID -H "Content-Type: application/json" --data-binary @hack/example.deployment.v2.json
 ```
+

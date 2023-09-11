@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/kube-orchestra/maestro/internal/config"
 	"github.com/kube-orchestra/maestro/internal/mqtt"
 	consumerv1 "github.com/kube-orchestra/maestro/internal/service/v1/consumers"
 	resourcesv1 "github.com/kube-orchestra/maestro/internal/service/v1/resources"
@@ -20,6 +21,15 @@ const listenAddress = "0.0.0.0:8080"
 const listenAddressGateway = "0.0.0.0:8090"
 
 func main() {
+
+	// Read the config from the environment.
+	config.Cfg.PrintConfig()
+	// Validate configuration.
+	configErr := config.Cfg.Validate()
+	if configErr != nil {
+		println("Configuration Errors: ", configErr.Error())
+	}
+
 	mqttConnection := mqtt.NewConnection()
 	mqttConnection.StartSender()
 	mqttConnection.StartStatusReceiver()

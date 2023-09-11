@@ -1,51 +1,50 @@
 package db
 
 import (
-	"context"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"encoding/json"
+	"fmt"
+
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
 )
 
 const ConsumerTable = "Consumers"
 
 func PutConsumer(c *v1.Consumer) error {
-	jsonBytes, err := attributevalue.MarshalMap(c)
+
+	var consumer Consumer
+
+	body, err := json.Marshal(c)
 	if err != nil {
+		println("Unable to marshal json body from proto consumer -------: ", err)
 		return err
 	}
 
-	_, err = dbClient.PutItem(
-		context.TODO(),
-		&dynamodb.PutItemInput{
-			TableName: aws.String(ConsumerTable),
-			Item:      jsonBytes,
-		})
+	_err := json.Unmarshal(body, &consumer)
+	if _err != nil {
+		println("Unable to unmarshal json to gorm consumer -------: ", _err)
+		return _err
+	}
+	fmt.Printf("To be inserted into the DB %v\n", consumer)
 
-	return err
+	updateConsumer(consumer)
+	return nil
 }
 
 func GetConsumer(consumerID string) (*v1.Consumer, error) {
-	getItemInput := &dynamodb.GetItemInput{
-		Key: map[string]types.AttributeValue{
-			"Id": &types.AttributeValueMemberS{Value: consumerID},
-		},
-		TableName: aws.String(ConsumerTable),
-	}
 
-	c := v1.Consumer{}
-
-	result, err := dbClient.GetItem(context.TODO(), getItemInput)
+	consumer := getConsumer(consumerID)
+	newConsumer := &v1.Consumer{}
+	consumerBA, err := json.Marshal(consumer)
 	if err != nil {
+		fmt.Printf("Unable to json Marshal gorm consumer -------: %v", err)
 		return nil, err
 	}
 
-	if result.Item == nil {
-		return nil, &ErrorNotFound{}
+	_err := json.Unmarshal(consumerBA, newConsumer)
+	if _err != nil {
+		fmt.Printf("Unable to get json unmarshal gorm consumer to proto consumer -------: %v", _err)
+		return nil, _err
 	}
-
-	err = attributevalue.UnmarshalMap(result.Item, &c)
-	return &c, err
+	fmt.Printf("Returning protobuf consumer from DB %v\n", newConsumer)
+	return newConsumer, nil
 }
