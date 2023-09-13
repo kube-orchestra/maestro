@@ -8,7 +8,7 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	cloudeventstypes "github.com/cloudevents/sdk-go/v2/types"
 	"github.com/kube-orchestra/maestro/internal/db"
-	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	cegeneric "open-cluster-management.io/api/cloudevents/generic"
 	cetypes "open-cluster-management.io/api/cloudevents/generic/types"
 	workpayload "open-cluster-management.io/api/cloudevents/work/payload"
@@ -25,7 +25,7 @@ func (codec *Codec) EventDataType() cetypes.CloudEventsDataType {
 
 func (codec *Codec) Encode(source string, eventType cetypes.CloudEventsType, obj *db.Resource) (*cloudevents.Event, error) {
 	evtBuilder := cetypes.NewEventBuilder(source, eventType).
-		WithResourceID(string(obj.Id)).
+		WithResourceID(obj.Id).
 		WithResourceVersion(obj.ResourceGenerationID).
 		WithClusterName(obj.ConsumerId)
 
@@ -123,11 +123,15 @@ func (codec *Codec) Decode(evt *cloudevents.Event) (*db.Resource, error) {
 	}
 
 	if resourceStatusPayload.Status != nil {
-		unsObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(resourceStatusPayload.Status)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert manifest to unstructured object: %v", err)
+		for _, value := range resourceStatusPayload.Status.StatusFeedbacks.Values {
+			if value.Name == "status" {
+				unsObj := &unstructured.Unstructured{}
+				if err := unsObj.UnmarshalJSON([]byte(*value.Value.JsonRaw)); err != nil {
+					return nil, fmt.Errorf("failed to convert manifest to unstructured object: %v", err)
+				}
+				resource.Status.ContentStatus = unsObj.Object
+			}
 		}
-		resource.Status.ContentStatus = unsObj
 	}
 
 	return resource, nil
