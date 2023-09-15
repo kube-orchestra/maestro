@@ -9,7 +9,6 @@ import (
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 func prettyPrint(i interface{}) string {
@@ -19,10 +18,10 @@ func prettyPrint(i interface{}) string {
 
 type ResourcesService struct {
 	v1.UnimplementedResourceServiceServer
-	resourceChan chan<- db.ResourceMessage
+	resourceChan chan<- db.Resource
 }
 
-func NewResourceService(resourceChan chan<- db.ResourceMessage) *ResourcesService {
+func NewResourceService(resourceChan chan<- db.Resource) *ResourcesService {
 	return &ResourcesService{resourceChan: resourceChan}
 }
 
@@ -66,7 +65,6 @@ func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateReque
 
 	// set uid
 	uid := uuid.NewString()
-	unstructuredObject.SetUID(types.UID(uid))
 
 	res := db.Resource{
 		Id:                   uid,
@@ -81,17 +79,7 @@ func (svc *ResourcesService) Create(_ context.Context, r *v1.ResourceCreateReque
 		return nil, err
 	}
 
-	messageMeta := db.MessageMeta{
-		SentTimestamp:        0,
-		ResourceGenerationID: res.ResourceGenerationID,
-	}
-	resourceMessage := db.ResourceMessage{
-		Id:          res.Id,
-		ConsumerId:  res.ConsumerId,
-		MessageMeta: messageMeta,
-		Content:     &unstructuredObject,
-	}
-	svc.resourceChan <- resourceMessage
+	svc.resourceChan <- res
 
 	return &v1.Resource{Id: res.Id,
 		ConsumerId:   res.ConsumerId,
@@ -109,7 +97,6 @@ func (svc *ResourcesService) Update(_ context.Context, r *v1.ResourceUpdateReque
 	}
 
 	res.Object = unstructured.Unstructured{Object: r.Object.AsMap()}
-	res.Object.SetUID(types.UID(r.Id))
 	res.ResourceGenerationID++
 
 	err = db.PutResource(res)
@@ -117,18 +104,7 @@ func (svc *ResourcesService) Update(_ context.Context, r *v1.ResourceUpdateReque
 		return nil, err
 	}
 
-	messageMeta := db.MessageMeta{
-		SentTimestamp:        0,
-		ResourceGenerationID: res.ResourceGenerationID + 1,
-	}
-
-	resourceMessage := db.ResourceMessage{
-		Id:          res.Id,
-		ConsumerId:  res.ConsumerId,
-		MessageMeta: messageMeta,
-		Content:     &res.Object,
-	}
-	svc.resourceChan <- resourceMessage
+	svc.resourceChan <- *res
 
 	return &v1.Resource{Id: res.Id,
 		ConsumerId:   res.ConsumerId,

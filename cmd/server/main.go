@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/kube-orchestra/maestro/internal/mqtt"
+	"github.com/kube-orchestra/maestro/internal/cloudevents"
 	consumerv1 "github.com/kube-orchestra/maestro/internal/service/v1/consumers"
 	resourcesv1 "github.com/kube-orchestra/maestro/internal/service/v1/resources"
 	v1 "github.com/kube-orchestra/maestro/proto/api/v1"
@@ -20,9 +20,10 @@ const listenAddress = "0.0.0.0:8080"
 const listenAddressGateway = "0.0.0.0:8090"
 
 func main() {
-	mqttConnection := mqtt.NewConnection()
-	mqttConnection.StartSender()
-	mqttConnection.StartStatusReceiver()
+	ctx := context.TODO()
+	ceConnection := cloudevents.NewConnection(ctx)
+	ceConnection.StartSender(ctx)
+	ceConnection.StartStatusReceiver(ctx)
 
 	// gRPC config
 
@@ -42,7 +43,7 @@ func main() {
 	v1.RegisterConsumerServiceServer(s, consumersAPI)
 
 	// Attach the resources service to the server
-	var resourcesAPI = resourcesv1.NewResourceService(mqttConnection.ResourceChannel)
+	var resourcesAPI = resourcesv1.NewResourceService(ceConnection.ResourceChannel)
 	v1.RegisterResourceServiceServer(s, resourcesAPI)
 
 	// Serve gRPC server

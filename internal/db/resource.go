@@ -2,13 +2,15 @@ package db
 
 import (
 	"context"
-	"encoding/json"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	ktypes "k8s.io/apimachinery/pkg/types"
 )
 
 const ResourceTable = "Resources"
@@ -19,6 +21,22 @@ type Resource struct {
 	ResourceGenerationID int64
 	Object               unstructured.Unstructured
 	Status               StatusMessage
+}
+
+func (r *Resource) GetUID() ktypes.UID {
+	return ktypes.UID(r.Id)
+}
+
+func (r *Resource) GetResourceVersion() string {
+	return strconv.FormatInt(r.ResourceGenerationID, 10)
+}
+
+func (r *Resource) GetDeletionTimestamp() *metav1.Time {
+	return r.Object.GetDeletionTimestamp()
+}
+
+func (r *Resource) SetDeletionTimestamp(timestamp *metav1.Time) {
+	r.Object.SetDeletionTimestamp(timestamp)
 }
 
 func PutResource(r *Resource) error {
@@ -60,12 +78,37 @@ func GetResource(resourceID string) (*Resource, error) {
 	return &r, err
 }
 
-func SetStatusResource(resourceID string, statusData []byte) error {
-	var status map[string]interface{}
-	if err := json.Unmarshal(statusData, &status); err != nil {
-		return err
+func ListResourceByConsumer(consumerID string) ([]*Resource, error) {
+	var resources []*Resource
+	scanInput := &dynamodb.ScanInput{
+		ScanFilter: map[string]types.Condition{
+			"ConsumerId": {
+				AttributeValueList: []types.AttributeValue{
+					&types.AttributeValueMemberS{Value: consumerID},
+				},
+				ComparisonOperator: types.ComparisonOperatorEq,
+			},
+		},
+		TableName: aws.String(ResourceTable),
+	}
+	result, err := dbClient.Scan(context.TODO(), scanInput)
+	if err != nil {
+		return resources, err
 	}
 
+	for _, i := range result.Items {
+		r := &Resource{}
+		err := attributevalue.UnmarshalMap(i, r)
+		if err != nil {
+			return resources, err
+		}
+		resources = append(resources, r)
+	}
+
+	return resources, nil
+}
+
+func SetStatusResource(resourceID string, status *StatusMessage) error {
 	statusAV, err := attributevalue.MarshalMap(status)
 	if err != nil {
 		return err
