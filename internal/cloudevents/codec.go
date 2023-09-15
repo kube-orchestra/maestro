@@ -8,7 +8,6 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	cloudeventstypes "github.com/cloudevents/sdk-go/v2/types"
 	"github.com/kube-orchestra/maestro/internal/db"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	cegeneric "open-cluster-management.io/api/cloudevents/generic"
 	cetypes "open-cluster-management.io/api/cloudevents/generic/types"
 	workpayload "open-cluster-management.io/api/cloudevents/work/payload"
@@ -125,11 +124,11 @@ func (codec *Codec) Decode(evt *cloudevents.Event) (*db.Resource, error) {
 	if resourceStatusPayload.Status != nil {
 		for _, value := range resourceStatusPayload.Status.StatusFeedbacks.Values {
 			if value.Name == "status" {
-				unsObj := &unstructured.Unstructured{}
-				if err := unsObj.UnmarshalJSON([]byte(*value.Value.JsonRaw)); err != nil {
-					return nil, fmt.Errorf("failed to convert manifest to unstructured object: %v", err)
+				contentStatus := make(map[string]interface{})
+				if err := json.Unmarshal([]byte(*value.Value.JsonRaw), &contentStatus); err != nil {
+					return nil, fmt.Errorf("failed to convert status feedback value to content status: %v", err)
 				}
-				resource.Status.ContentStatus = unsObj.Object
+				resource.Status.ContentStatus = contentStatus
 			}
 		}
 	}
